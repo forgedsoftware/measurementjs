@@ -106,7 +106,7 @@
 		var systemName;
 
 		for (systemName in systems) {
-			addSystem(systems[systemName] || {}, i);
+			addSystem(systems[systemName] || {}, systemName);
 		}
 	}
 
@@ -116,6 +116,9 @@
 
 		for (unitName in system.units) {
 			var unit = system.units[unitName];
+			// temp
+			unitName = unit.name;
+			
 			units[unitName] = {
 				name: unitName,
 				displayName: unit.displayName || unitName || '',
@@ -135,7 +138,26 @@
 			name: systemName,
 			symbol: system.symbol || '',
 			baseUnit: system.baseUnit || firstPropertyName(units) || '',
-			units: units
+			units: units || []
+		};
+	}
+
+	measurement.unit = function (systemName, unitName) {
+		var system, unit;
+
+		system = systems[systemName];
+		if (system) {
+			unit = system.units[unitName];
+			console.log(system);
+		}
+		if (unit) {
+			return unit;
+		}
+		return {
+			name: unitName,
+			multiplier: 1,
+			offset: 0,
+			isFakeUnit: true
 		};
 	}
 
@@ -150,23 +172,18 @@
 			this.value = value;
 			this.measurementSystem = measurementSystem;
 			this.unitName = unitName;
-		}
-
-		MeasureImpl.prototype.unit = function (unitName) {
-			return {
-				name: unitName,
-				multiplier: 1,
-				offset: 0
-			};
+			this.unit = measurement.unit(measurementSystem, unitName);
 		}
 
 		MeasureImpl.prototype.convert = function (unitName) {
 			var unit, newValue;
 
-			unit = this.unit(unitName);
-			if (unit) {
+			unit = measurement.unit(this.measurementSystem, unitName);
+			if (unit) { // Still need to convert to base first here...
 				newValue = (this.value * unit.multiplier) + unit.offset;
-				return MeasureImpl(newValue, this.measurementSystem, unitName);
+				return new Measure(newValue, this.measurementSystem, unitName);
+			} else {
+				return this;
 			}
 		}
 
@@ -201,29 +218,41 @@
 		length: { // radius, wavelength
 			symbol: 'L',
 			baseUnit: 'metre',
+			units: []
 		},
 		mass: {
 			symbol: 'M',
 			baseUnit: 'kilogram',
-
+			units: []
 		},
 		electricCurrent: {
 			symbol: 'I',
 			baseUnit: 'ampere',
+			units: []
 		},
 		temperature: {
 			symbol: 'Θ',
 			baseUnit: 'kelvin',
+			units: [
+				{ name: 'kelvin', symbol: 'K', type: 'si' },
+				{ name: 'celsius', symbol: 'C', type: 'si', offset: -273.15 },
+				{ name: 'fahrenheit', symbol: 'F', type: 'customary', multiplier: 1.8, offset: -459.67 },
+				{ name: 'rankine', symbol: 'R', otherSymbols: ['Ra'], type: 'customary', multiplier: 1.8 },
+				{ name: 'romer', symbol: 'Rø', otherSymbols: ['R'], type: 'customary', multiplier: 0.525, offset: -135.90375 }, // Technically Rømer (or Roemer)
+				{ name: 'newton', symbol: 'N', type: 'customary', multiplier: 0.33, offset: -90.13949999999998 }, // May have rounding error
+				{ name: 'delisle', symbol: 'D', type: 'customary', multiplier: -1.5, offset: 559.7249999999999 }, // May have rounding error
+				{ name: 'reaumur', symbol: 'Ré', otherSymbols: ['Re', 'R'], type: 'customary', multiplier: -1.5, offset: 559.7249999999999 } // Technically Réaumur
+			]
 		},
 		amountOfSubstance: {
 			symbol: 'N',
 			baseUnit: 'mole',
-
+			units: []
 		},
 		luminousIntensity: {
 			symbol: 'J',
 			baseUnit: 'candela',
-
+			units: []
 		},
 		volume: {
 			baseUnit: 'litre',
@@ -303,8 +332,8 @@
 				{ name: 'byte', symbol: 'B', type: 'binary', multiplier: 8 },
 			]
 		}
-
 	};
+	measurement.add({ systems: MeasurementSystems });
 
 	// Do we need this? Can unit just be a dumb object?
 	Unit = (function () {

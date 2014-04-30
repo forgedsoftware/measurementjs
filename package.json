@@ -1,0 +1,17 @@
+{
+	"name": "measurement",
+	"version": "0.0.1",
+	"dependencies": {},
+	"devDependencies": {
+		"gulp": "latest"
+	},
+	"engines": {
+		"node": ">= 0.10"
+	},
+	"licenses": [
+		{
+			"type": "MIT",
+			"url": "TO BE SET"
+		}
+	]
+}

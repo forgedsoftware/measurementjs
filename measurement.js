@@ -69,7 +69,7 @@
 		if (!systemName || !unitName) {
 			var jsonResult = JSON.parse(value);
 			if (jsonResult != null && typeof jsonResult === 'object') {
-				return new Quantity(jsonResult.value, jsonResult.system, jsonResult.unit);
+				return new Quantity(jsonResult.value, jsonResult.system, jsonResult.unit || jsonResult.dimensions);
 			} else {
 				throw new Error("Invalid parameters provided.")
 			}
@@ -80,7 +80,6 @@
 	measurement.configure = function (config) {
 
 	};
-
 
 	measurement.setSystems = function (replacementSystems) {
 		if (!replacementSystems) {
@@ -257,7 +256,7 @@
 
 	// QUANTITY OBJECT
 
-	Quantity = (function () { // TODO: Consider renaming to Quantity ????
+	Quantity = (function () {
 		function QuantityImpl(value, systemName, dimensions) { // TODO: Uncertainties (+-0.4), (+0.5), (-0.9), (+0.8, -0.2)... maybe { plusMinus: 1.2, plus: 1.4, minus: 1.2, sigma: 3 }
 			var currentDimension;
 
@@ -305,7 +304,7 @@
 		}
 
 		function isDimension (value) {
-			// Not fullproof, but at least validates the commonly used functions exist
+			// Not fullproof, but at least validates that the commonly used functions exist
 			return value && typeof value === 'object' && value.convertFromBase && value.convertToBase;
 		}
 

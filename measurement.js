@@ -160,6 +160,10 @@
 		return system;
 	}
 
+	measurement.hasSystem = function (systemName) {
+		return (systems[systemName]) ? true : false;
+	}
+
 	measurement.unit = function (systemName, unitName) {
 		var system, unit;
 
@@ -169,6 +173,16 @@
 			throw new Error('Specified unit does not exist in this system');
 		}
 		return unit;
+	}
+
+	measurement.hasUnit = function (systemName, unitName) {
+		var system;
+
+		if (!measurement.hasSystem(systemName)) {
+			return false;
+		}
+		system = measurement.system(systemName);
+		return (system.units[unitName]) ? true : false;
 	}
 
 	measurement.baseUnit = function (systemName, baseUnitName) {
@@ -202,26 +216,34 @@
 			return (measurement.system(this.systemName).baseUnit === this.unitName);
 		}
 
+		// Returns dimension-value pair: { dimension: {}, value: 123 }
 		DimensionImpl.prototype.convert = function (value, unitName) {
-			var newValue = this.convertToBase();
-			return convertFromBase(newValue, unitName);
+			var dimValuePair = this.convertToBase();
+			return dimValuePair.dimension.convertFromBase(dimValuePair.value, unitName);
 		}
 
+		// Returns dimension-value pair: { dimension: {}, value: 123 }
 		DimensionImpl.prototype.convertToBase = function (value) {
 			var unit, baseUnitName, baseUnit, newValue;
 
 			if (this.unitIsBaseUnit()) {
-				return value;
+				return {
+					dimension: this.clone(),
+					value: value
+				};
 			}
 			unit = measurement.unit(this.systemName, this.unitName);
 			baseUnitName = measurement.system(this.systemName).baseUnit;
 			// Here to validate baseUnit exists
 			baseUnit = measurement.unit(this.systemName, baseUnitName);
 
-			this.unitName = baseUnitName; // TODO: Currently this changes the dimension... need to create another instead.
-			return doConvert(value, this.power, unit, true);
+			return {
+				dimension: new Dimension(this.systemName, baseUnitName, this.power),
+				value: doConvert(value, this.power, unit, true)
+			};
 		}
 
+		// Returns dimension-value pair: { dimension: {}, value: 123 }
 		DimensionImpl.prototype.convertFromBase = function (value, unitName) {
 			var unit, newValue;
 
@@ -230,8 +252,10 @@
 			}
 			unit = measurement.unit(this.systemName, unitName);
 
-			this.unitName = unitName; // TODO: Currently this changes the dimension... need to create another instead.
-			return doConvert(value, this.power, unit, false);
+			return {
+				dimension: new Dimension(this.systemName, unitName, this.power),
+				value: doConvert(value, this.power, unit, false)
+			};
 		}
 
 		function doConvert(value, power, unit, toBase) {
@@ -249,6 +273,10 @@
 		}
 
 		// Helper Functions
+
+		DimensionImpl.prototype.clone = function () {
+			return new Dimension(this.systemName, this.unitName, this.power);
+		}
 
 		DimensionImpl.prototype.serialised = function () {
 			return {
@@ -313,6 +341,10 @@
 			return (typeof value === 'string');
 		}
 
+		function isNumber (value) {
+			return (typeof value === 'number');
+		}
+
 		function isArray (value) {
 			return (Object.prototype.toString.call(value) === '[object Array]');
 		}
@@ -339,6 +371,16 @@
 			dimension.validateDimension();
 		}
 
+		// Dimension Manipulation
+
+		QuantityImpl.prototype.simplify = function () {
+			// TODO If two dimensions have the same system or one dimension has a power === 0 we can simplify
+
+			// For each dimension
+				// If another dimension has the same system
+					// Combine
+		}
+
 		// Unit Conversion
 
 		// Notes:
@@ -360,28 +402,41 @@
 			return convertFromBase(quantityAsBase, unitName);
 		}
 
-		QuantityImpl.prototype.convertToBase = function () {
-			var convertedValue, dimension;
+		// unitName here is optional, if provided it will only convert dimensions with that unitName to base
+		QuantityImpl.prototype.convertToBase = function (unitName) {
+			var convertedValue, dimension, dimValuePair, newDimensions;
 
+			newDimensions = [];
 			convertedValue = this.value;
 			for (dimension in this.dimensions) {
-				// TODO: Only if dimension needs to be converted to base
-				convertedValue = this.dimensions[dimension].convertToBase(convertedValue);
+				if (!unitName || this.dimensions[dimension].unitName === unitName) {
+					dimValuePair = this.dimensions[dimension].convertToBase(convertedValue);
+					convertedValue = dimValuePair.value;
+					newDimensions.push(dimValuePair.dimension);
+				} else {
+					newDimensions.push(self.dimensions[dimension].clone());
+				}
 			}
-			return new Quantity(convertedValue, this.systemName, this.dimensions);
+			return new Quantity(convertedValue, this.systemName, newDimensions);
 		}
 
 		// This function is hidden as exposing it should be unnecessary.
 		// Use convert instead.
 		function convertFromBase(self, unitName) {
-			var convertedValue, dimension;
+			var convertedValue, dimension, dimValuePair, newDimensions;
 
+			newDimensions = [];
 			convertedValue = self.value;
 			for (dimension in self.dimensions) {
-				// TODO: Only if unitName is related to a to the specific dimension
-				convertedValue = self.dimensions[dimension].convertFromBase(convertedValue, unitName);
+				if (measurement.hasUnit(self.dimensions[dimension].systemName, unitName)) {
+					dimValuePair = self.dimensions[dimension].convertFromBase(convertedValue, unitName);
+					convertedValue = dimValuePair.value;
+					newDimensions.push(dimValuePair.dimension);
+				} else {
+					newDimensions.push(self.dimensions[dimension].clone());
+				}
 			}
-			return new Quantity(convertedValue, self.systemName, self.dimensions);
+			return new Quantity(convertedValue, self.systemName, newDimensions);
 		}
 
 		// Quantity Math & Dimensional Analysis
@@ -395,8 +450,11 @@
 			// Currently we only allow the opposite: (5, 'time','seconds').multiply((5)) == (25, 'time', 'seconds')
 
 		QuantityImpl.prototype.multiply = function (value) {
-			if (!isQuantity(value)) { // Assume scalar
-				return new Quantity(this.value * value, this.systemName, this.dimensions); // TODO check value is number
+			if (isNumber(value)) { // Assume scalar
+				return new Quantity(this.value * value, this.systemName, this.dimensions);
+			}
+			if (!isQuantity(value)) {
+				throw new Error('Cannot multiply something that is not a number or a Quantity.');
 			}
 
 			// Mainpulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
@@ -411,8 +469,11 @@
 		}
 
 		QuantityImpl.prototype.divide = function (value) {
-			if (!isQuantity(value)) { // Assume scalar
-				return new Quantity(this.value / value, this.systemName, this.dimensions); // TODO check value is number
+			if (isNumber(value)) { // Assume scalar
+				return new Quantity(this.value / value, this.systemName, this.dimensions);
+			}
+			if (!isQuantity(value)) {
+				throw new Error('Cannot divide something that is not a number or a Quantity.');
 			}
 
 			// Mainpulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
@@ -427,8 +488,11 @@
 		}
 
 		QuantityImpl.prototype.add = function (value) {
-			if (!isQuantity(value)) { // Assume shorthand
+			if (isNumber(value)) { // Assume shorthand
 				return new Quantity(this.value + value, this.systemName, this.dimensions); // TODO check value is number
+			}
+			if (!isQuantity(value)) {
+				throw new Error('Cannot add something that is not a number or a Quantity.');
 			}
 			if (value.systemName !== this.systemName) { // Commensurability
 				throw new Error('In order to add a quantity it must have the same system.');
@@ -439,8 +503,11 @@
 		}
 
 		QuantityImpl.prototype.subtract = function (value) {
-			if (!isQuantity(value)) { // Assume shorthand
+			if (isNumber(value)) { // Assume shorthand
 				return new Quantity(this.value - value, this.systemName, this.dimensions); // TODO check value is number
+			}
+			if (!isQuantity(value)) {
+				throw new Error('Cannot subtract something that is not a number or a Quantity.');
 			}
 			if (value.systemName !== this.systemName) { // Commensurability
 				throw new Error('In order to subtract a quantity it must have the same system.');

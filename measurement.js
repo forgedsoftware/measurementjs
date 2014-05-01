@@ -336,7 +336,7 @@
 			if (!isDimension(dimension)) {
 				throw new Error('Dimension is not a valid Dimension object');
 			}
-			// TODO: Maybe have a function on dimension to check validity?
+			dimension.validateDimension();
 		}
 
 		// Unit Conversion

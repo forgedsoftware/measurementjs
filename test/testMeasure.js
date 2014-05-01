@@ -5,7 +5,7 @@ console.log(window);
 test('construct measurement', function () {
 	expect (1);
 
-	deepEqual(m(12, 'length', 'metre').toJson(), '{\"value\":12,\"unit\":\"metre\",\"system\":\"length\"}');
+	deepEqual(m(12, 'length', 'metre').serialised(), JSON.parse('{\"value\":12,\"system\":\"length\",\"unit\":\"metre\"}'));
 });
 
 test('simple conversion from base unit to other unit', function () {

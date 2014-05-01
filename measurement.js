@@ -10,6 +10,7 @@
 		systems,
 		siPrefixes,
 		siBinaryPrefixes,
+		Dimension,
 		Measure,
 		MeasurementSystems,
 		Unit;
@@ -178,29 +179,167 @@
 		system.baseUnit = unit.name;
 	};
 
+	// DIMENSION OBJECT
+
+	Dimension = (function () {
+		function DimensionImpl(systemName, unitName, power) {
+			this.systemName = systemName;
+			this.unitName = unitName;
+			this.power = power || 1;
+
+			// TODO: Validate system and unit exist.
+		}
+
+		DimensionImpl.prototype.unitIsBaseUnit = function () {
+			return (measurement.system(this.systemName).baseUnit === this.unitName);
+		}
+
+		DimensionImpl.prototype.convert = function (value, unitName) {
+			var newValue = this.convertToBase();
+			return convertFromBase(newValue, unitName);
+		}
+
+		DimensionImpl.prototype.convertToBase = function (value) {
+			var unit, baseUnitName, baseUnit, newValue;
+
+			if (this.unitIsBaseUnit()) {
+				return value;
+			}
+			unit = measurement.unit(this.systemName, this.unitName);
+			baseUnitName = measurement.system(this.systemName).baseUnit;
+			baseUnit = measurement.unit(this.systemName, baseUnitName);
+
+			// TODO - Handle Powers!!!
+			this.unitName = baseUnitName; // TODO: Currently this changes the dimension... need to create another instead.
+			return (value * unit.multiplier) + unit.offset; // TODO dimensionality with offsets may not work with compound dimensions.
+		}
+
+		DimensionImpl.prototype.convertFromBase = function (value, unitName) {
+			var unit, newValue;
+
+			if (!this.unitIsBaseUnit()) {
+				throw new Error("The existing unit is not a base unit");
+			}
+			unit = measurement.unit(this.systemName, unitName);
+
+			// TODO - Handle Powers!!!
+			this.unitName = unitName; // TODO: Currently this changes the dimension... need to create another instead.
+			return (value - unit.offset) / unit.multiplier; // TODO dimensionality with offsets may not work with compound dimensions.
+		}
+
+		// Helper Functions
+
+		DimensionImpl.prototype.serialised = function () {
+			return {
+				system: this.systemName,
+				unit: this.unitName,
+				power: this.power
+			};
+		}
+
+		DimensionImpl.prototype.toJson = function () {
+			return JSON.stringify(this.serialised());
+		}
+
+		DimensionImpl.prototype.toShortString = function () {
+			var unit, dimensionString;
+
+			unit = measurement.unit(this.systemName, this.unitName);
+			dimensionString = unit.symbol;
+			if (this.power !== 1) {
+				dimensionString += '^' + this.power; // TODO - nice way to do powers?
+			}
+			return dimensionString;
+		}
+
+		return DimensionImpl;
+	}());
+
 	// MEASURE OBJECT
 
 	Measure = (function () { // TODO: Consider renaming to Quantity ????
-		function MeasureImpl(value, measurementSystem, unitName) { // TODO: Uncertainties (+-0.4), (+0.5), (-0.9), (+0.8, -0.2)... maybe { plusMinus: 1.2, plus: 1.4, minus: 1.2, sigma: 3 }
-			this.value = value;
-			this.measurementSystem = measurementSystem;
-			this.unitName = unitName;
+		function MeasureImpl(value, systemName, dimensions) { // TODO: Uncertainties (+-0.4), (+0.5), (-0.9), (+0.8, -0.2)... maybe { plusMinus: 1.2, plus: 1.4, minus: 1.2, sigma: 3 }
+			var currentDimension;
 
+			this.value = value;
+			this.systemName = systemName;
+			//DEPRECATED
+			this.unitName = dimensions;
+			
+			this.dimensions = [];
+			if (isString(dimensions)) {
+				this.dimensions.push(new Dimension(systemName, dimensions));
+			} else if (isArray(dimensions)) {
+				for (currentDimension in dimensions) {
+					validateDimension(currentDimension);
+				}
+				this.dimensions = dimensions;
+			} else if (isObject()) {
+				validateDimension(dimensions);
+				this.dimensions.push(dimensions);
+			}
+
+			// TODO: Validation
+			// DEPRECATED
 			// In addition to getting the unit, this also validates the system and unit exist.
-			this.unit = measurement.unit(measurementSystem, unitName);
+			// this.unit = measurement.unit(systemName, dimensions);
 
 			// TODO: Consider: If a system/unit is changed while measure exists is this a problem?
 			// Should we not be storing the unit and only getting it when needed?
 		}
 
-		
+		// Type Checking
+
+		function isString (value) {
+			return (typeof value === 'string');
+		}
+
+		function isArray (value) {
+			return (Object.prototype.toString.call(value) === '[object Array]');
+		}
+
+		function isObject (value) {
+			return (typeof value === 'object') && !isArray(value);
+		}
+
+		function isMeasure (value) {
+			return value && value.constructor === MeasureImpl;
+		}
+
+		function isDimension (value) {
+			return true;
+			// TODO: Make check valid within scope
+			//return value && value.constructor === Dimension;
+		}
+
+		// Validation
+
+		function validateDimension(dimension) {
+			if (!isDimension(dimension)) {
+				throw new Error('Dimension is invalid');
+			}
+			// TODO: Maybe have a function on dimension to check validity?
+		}
+
 		// Unit Conversion
 
 		// Notes:
 		// http://en.wikipedia.org/wiki/Conversion_of_units
 
-		MeasureImpl.prototype.unitIsBaseUnit = function (unitName) {
-			return (measurement.system(this.measurementSystem).baseUnit === this.unitName);
+		// DEPRECATED
+		MeasureImpl.prototype.unitIsBaseUnit = function () {
+			return (measurement.system(this.systemName).baseUnit === this.unitName);
+		}
+
+		MeasureImpl.prototype.allDimensionsUsingBaseUnit = function () {
+			var dimension;
+
+			for (dimension in this.dimensions) {
+				if (!this.dimensions[dimension].unitIsBaseUnit()) {
+					return false;
+				}
+			}
+			return true;
 		}
 
 		MeasureImpl.prototype.convert = function (unitName) {
@@ -209,35 +348,27 @@
 		}
 
 		MeasureImpl.prototype.convertToBase = function () {
-			var baseUnit, newValue;
+			var convertedValue, dimension;
 
-			if (this.unitIsBaseUnit()) {
-				return this;
+			convertedValue = this.value;
+			for (dimension in this.dimensions) {
+				// TODO: Only if dimension needs to be converted to base
+				convertedValue = this.dimensions[dimension].convertToBase(convertedValue);
 			}
-			baseUnit = measurement.unit(this.measurementSystem, measurement.system(this.measurementSystem).baseUnit);
-			if (baseUnit) {
-				newValue = (this.value * this.unit.multiplier) + this.unit.offset;
-				return new Measure(newValue, this.measurementSystem, baseUnit.name);
-			} else {
-				throw new Error("No base unit could be found");
-			}
+			return new Measure(convertedValue, this.systemName, this.dimensions);
 		}
 
 		// This function is hidden as exposing it should be unnecessary.
 		// Use convert instead.
 		function convertFromBase(self, unitName) {
-			var unit, newValue;
+			var convertedValue, dimension;
 
-			if (!self.unitIsBaseUnit()) {
-				throw new Error("The existing unit is not a base unit");
+			convertedValue = self.value;
+			for (dimension in self.dimensions) {
+				// TODO: Only if unitName is related to a to the specific dimension
+				convertedValue = self.dimensions[dimension].convertFromBase(convertedValue, unitName);
 			}
-			unit = measurement.unit(self.measurementSystem, unitName);
-			if (unit) {
-				newValue = (self.value - unit.offset) / unit.multiplier;
-				return new Measure(newValue, self.measurementSystem, unitName);
-			} else {
-				throw new Error("The specified unit could not be found");
-			}
+			return new Measure(convertedValue, self.systemName, self.dimensions);
 		}
 
 		// Measure Math & Dimensional Analysis
@@ -252,7 +383,7 @@
 
 		MeasureImpl.prototype.multiply = function (value) {
 			if (!isMeasure(value)) { // Assume scalar
-				return new Measure(this.value * value, this.measurementSystem, this.unitName); // TODO check value is number
+				return new Measure(this.value * value, this.systemName, this.unitName); // TODO check value is number
 			}
 
 			// Mainpulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
@@ -268,7 +399,7 @@
 
 		MeasureImpl.prototype.divide = function (value) {
 			if (!isMeasure(value)) { // Assume scalar
-				return new Measure(this.value / value, this.measurementSystem, this.unitName); // TODO check value is number
+				return new Measure(this.value / value, this.systemName, this.unitName); // TODO check value is number
 			}
 
 			// Mainpulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
@@ -284,9 +415,9 @@
 
 		MeasureImpl.prototype.add = function (value) {
 			if (!isMeasure(value)) { // Assume shorthand
-				return new Measure(this.value + value, this.measurementSystem, this.unitName); // TODO check value is number
+				return new Measure(this.value + value, this.systemName, this.unitName); // TODO check value is number
 			}
-			if (value.measurementSystem !== this.measurementSystem) { // Commensurability
+			if (value.systemName !== this.systemName) { // Commensurability
 				throw new Error('In order to add a measure it must have the same system.');
 			}
 
@@ -296,19 +427,15 @@
 
 		MeasureImpl.prototype.subtract = function (value) {
 			if (!isMeasure(value)) { // Assume shorthand
-				return new Measure(this.value - value, this.measurementSystem, this.unitName); // TODO check value is number
+				return new Measure(this.value - value, this.systemName, this.unitName); // TODO check value is number
 			}
-			if (value.measurementSystem !== this.measurementSystem) { // Commensurability
+			if (value.systemName !== this.systemName) { // Commensurability
 				throw new Error('In order to subtract a measure it must have the same system.');
 			}
 
 			// Convert value into same units
 			// Create new measure with values subtracted directly and the initial measure's units
 
-		}
-
-		function isMeasure (value) {
-			return value && value.constructor === MeasureImpl;
 		}
 
 		// Math Aliases
@@ -333,47 +460,70 @@
 		MeasureImpl.prototype.tan = function () { return createMeasure(this, Math.tan); }
 
 		function createMeasure(self, mathFunction) {
-			return new Measure(mathFunction(self.value), self.measurementSystem, self.unitName);
+			return new Measure(mathFunction(self.value), self.systemName, self.unitName);
 		}
 
 		MeasureImpl.prototype.atan2 = function (y) {
 			// Assume y is a number and a scalar
-			return new Measure(Math.atan2(y, this.value), this.measurementSystem, this.unitName);
+			return new Measure(Math.atan2(y, this.value), this.systemName, this.unitName);
 		}
 
 		MeasureImpl.prototype.pow = function (y) {
 			// Assume y is a number and a scalar
-			return new Measure(Math.pow(this.value, y), this.measurementSystem, this.unitName);
+			return new Measure(Math.pow(this.value, y), this.systemName, this.unitName);
 		}
 
 		MeasureImpl.prototype.max = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-			return new Measure(Math.max.apply(null, args), this.measurementSystem, this.unitName);
+			return new Measure(Math.max.apply(null, args), this.systemName, this.unitName);
 		}
 
 		MeasureImpl.prototype.min = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-			return new Measure(Math.min.apply(null, args), this.measurementSystem, this.unitName);
+			return new Measure(Math.min.apply(null, args), this.systemName, this.unitName);
 		}
 
 		// Helper functions
 
-		MeasureImpl.prototype.toJson = function () {
-			return JSON.stringify({
+		MeasureImpl.prototype.serialised = function () {
+			var dimension, jsonResult;
+
+			jsonResult = {
 				value: this.value,
-				unit: this.unitName,
-				system: this.measurementSystem
-			});
+				system: this.systemName
+			};
+
+			if (this.dimensions.length === 1 && this.dimensions[0].power === 1) {
+				jsonResult.unit = this.dimensions[0].unitName;
+			} else {
+				jsonResult.dimensions = [];
+				for (dimension in this.dimensions) {
+					jsonResult.dimensions.push(this.dimensions[dimension].serialised());
+				}
+			}
+			return jsonResult;
+		}
+
+		MeasureImpl.prototype.toJson = function () {
+			return JSON.stringify(this.serialised());
 		}
 
 		MeasureImpl.prototype.toShortFixed = function (lengthOfDecimal) {
-			return this.value.toFixed(lengthOfDecimal) + ' ' + this.unit.symbol;
+			var dimension, dimensionString = '';
+			for (dimension in this.dimensions) {
+				dimensionString += this.dimensions[dimension].toShortString();
+			}
+			return this.value.toFixed(lengthOfDecimal) + ' ' + dimensionString;
 		}
 
 		MeasureImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
-			return this.value.toPrecision(numberOfSigFigs) + ' ' + this.unit.symbol;
+			var dimension, dimensionString = '';
+			for (dimension in this.dimensions) {
+				dimensionString += this.dimensions[dimension].toShortString();
+			}
+			return this.value.toPrecision(numberOfSigFigs) + ' ' + dimensionString;
 		}
 
 		return MeasureImpl;

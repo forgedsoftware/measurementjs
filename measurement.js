@@ -263,15 +263,13 @@
 
 			this.value = value;
 			this.systemName = systemName;
-			//DEPRECATED
-			this.unitName = dimensions;
 			
 			this.dimensions = [];
 			if (isString(dimensions)) {
 				this.dimensions.push(new Dimension(systemName, dimensions));
 			} else if (isArray(dimensions)) {
 				for (currentDimension in dimensions) {
-					validateDimension(currentDimension);
+					validateDimension(dimensions[currentDimension]);
 				}
 				this.dimensions = dimensions;
 			} else if (isObject()) {
@@ -307,16 +305,15 @@
 		}
 
 		function isDimension (value) {
-			return true;
-			// TODO: Make check valid within scope
-			//return value && value.constructor === Dimension;
+			// Not fullproof, but at least validates the commonly used functions exist
+			return value && typeof value === 'object' && value.convertFromBase && value.convertToBase;
 		}
 
 		// Validation
 
 		function validateDimension(dimension) {
 			if (!isDimension(dimension)) {
-				throw new Error('Dimension is invalid');
+				throw new Error('Dimension is not a valid Dimension object');
 			}
 			// TODO: Maybe have a function on dimension to check validity?
 		}
@@ -325,11 +322,6 @@
 
 		// Notes:
 		// http://en.wikipedia.org/wiki/Conversion_of_units
-
-		// DEPRECATED
-		MeasureImpl.prototype.unitIsBaseUnit = function () {
-			return (measurement.system(this.systemName).baseUnit === this.unitName);
-		}
 
 		MeasureImpl.prototype.allDimensionsUsingBaseUnit = function () {
 			var dimension;
@@ -383,7 +375,7 @@
 
 		MeasureImpl.prototype.multiply = function (value) {
 			if (!isMeasure(value)) { // Assume scalar
-				return new Measure(this.value * value, this.systemName, this.unitName); // TODO check value is number
+				return new Measure(this.value * value, this.systemName, this.dimensions); // TODO check value is number
 			}
 
 			// Mainpulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
@@ -399,7 +391,7 @@
 
 		MeasureImpl.prototype.divide = function (value) {
 			if (!isMeasure(value)) { // Assume scalar
-				return new Measure(this.value / value, this.systemName, this.unitName); // TODO check value is number
+				return new Measure(this.value / value, this.systemName, this.dimensions); // TODO check value is number
 			}
 
 			// Mainpulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
@@ -415,7 +407,7 @@
 
 		MeasureImpl.prototype.add = function (value) {
 			if (!isMeasure(value)) { // Assume shorthand
-				return new Measure(this.value + value, this.systemName, this.unitName); // TODO check value is number
+				return new Measure(this.value + value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (value.systemName !== this.systemName) { // Commensurability
 				throw new Error('In order to add a measure it must have the same system.');
@@ -427,7 +419,7 @@
 
 		MeasureImpl.prototype.subtract = function (value) {
 			if (!isMeasure(value)) { // Assume shorthand
-				return new Measure(this.value - value, this.systemName, this.unitName); // TODO check value is number
+				return new Measure(this.value - value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (value.systemName !== this.systemName) { // Commensurability
 				throw new Error('In order to subtract a measure it must have the same system.');
@@ -460,29 +452,29 @@
 		MeasureImpl.prototype.tan = function () { return createMeasure(this, Math.tan); }
 
 		function createMeasure(self, mathFunction) {
-			return new Measure(mathFunction(self.value), self.systemName, self.unitName);
+			return new Measure(mathFunction(self.value), self.systemName, self.dimensions);
 		}
 
 		MeasureImpl.prototype.atan2 = function (y) {
 			// Assume y is a number and a scalar
-			return new Measure(Math.atan2(y, this.value), this.systemName, this.unitName);
+			return new Measure(Math.atan2(y, this.value), this.systemName, this.dimensions);
 		}
 
 		MeasureImpl.prototype.pow = function (y) {
 			// Assume y is a number and a scalar
-			return new Measure(Math.pow(this.value, y), this.systemName, this.unitName);
+			return new Measure(Math.pow(this.value, y), this.systemName, this.dimensions);
 		}
 
 		MeasureImpl.prototype.max = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-			return new Measure(Math.max.apply(null, args), this.systemName, this.unitName);
+			return new Measure(Math.max.apply(null, args), this.systemName, this.dimensions);
 		}
 
 		MeasureImpl.prototype.min = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-			return new Measure(Math.min.apply(null, args), this.systemName, this.unitName);
+			return new Measure(Math.min.apply(null, args), this.systemName, this.dimensions);
 		}
 
 		// Helper functions

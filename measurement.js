@@ -118,7 +118,7 @@
 			var unit = system.units[unitName];
 			// temp
 			unitName = unit.name;
-			
+
 			units[unitName] = {
 				name: unitName,
 				displayName: unit.displayName || unitName || '',
@@ -142,6 +142,10 @@
 		};
 	}
 
+	measurement.system = function (systemName) {
+		return systems[systemName];
+	}
+
 	measurement.unit = function (systemName, unitName) {
 		var system, unit;
 
@@ -157,7 +161,7 @@
 			name: unitName,
 			multiplier: 1,
 			offset: 0,
-			isFakeUnit: true
+			isFakeUnit: true // Maybe provide a warning here instead?
 		};
 	}
 
@@ -167,7 +171,7 @@
 
 	// MEASURE OBJECT
 
-	Measure = (function () {
+	Measure = (function () { // TODO: Consider renaming to Quantity ????
 		function MeasureImpl(value, measurementSystem, unitName) {
 			this.value = value;
 			this.measurementSystem = measurementSystem;
@@ -175,15 +179,44 @@
 			this.unit = measurement.unit(measurementSystem, unitName);
 		}
 
+		MeasureImpl.prototype.unitIsBaseUnit = function (unitName) {
+			return (measurement.system(this.measurementSystem).baseUnit === this.unitName);
+		}
+
 		MeasureImpl.prototype.convert = function (unitName) {
+			var measureAsBase = this.convertToBase();
+			return convertFromBase(measureAsBase, unitName);
+		}
+
+		MeasureImpl.prototype.convertToBase = function () {
+			var baseUnit, newValue;
+
+			if (this.unitIsBaseUnit()) {
+				return this;
+			}
+			baseUnit = measurement.unit(this.measurementSystem, measurement.system(this.measurementSystem).baseUnit);
+			if (baseUnit) {
+				newValue = (this.value * this.unit.multiplier) + this.unit.offset;
+				return new Measure(newValue, this.measurementSystem, baseUnit.name);
+			} else {
+				throw new Error("No base unit could be found");
+			}
+		}
+
+		// This function is hidden as exposing it should be unnecessary.
+		// Use convert instead.
+		function convertFromBase(self, unitName) {
 			var unit, newValue;
 
-			unit = measurement.unit(this.measurementSystem, unitName);
-			if (unit) { // Still need to convert to base first here...
-				newValue = (this.value * unit.multiplier) + unit.offset;
-				return new Measure(newValue, this.measurementSystem, unitName);
+			if (!self.unitIsBaseUnit()) {
+				throw new Error("The existing unit is not a base unit");
+			}
+			unit = measurement.unit(self.measurementSystem, unitName);
+			if (unit) {
+				newValue = (self.value - unit.offset) / unit.multiplier;
+				return new Measure(newValue, self.measurementSystem, unitName);
 			} else {
-				return this;
+				throw new Error("The specified unit could not be found");
 			}
 		}
 
@@ -235,13 +268,14 @@
 			baseUnit: 'kelvin',
 			units: [
 				{ name: 'kelvin', symbol: 'K', type: 'si' },
-				{ name: 'celsius', symbol: 'C', type: 'si', offset: -273.15 },
-				{ name: 'fahrenheit', symbol: 'F', type: 'customary', multiplier: 1.8, offset: -459.67 },
+				{ name: 'celsius', symbol: 'C', type: 'si', offset: 273.15 },
+				{ name: 'fahrenheit', symbol: 'F', type: 'customary', multiplier: 0.5555555555555556, offset: 255.37222222 },
+				// Check values
 				{ name: 'rankine', symbol: 'R', otherSymbols: ['Ra'], type: 'customary', multiplier: 1.8 },
-				{ name: 'romer', symbol: 'Rø', otherSymbols: ['R'], type: 'customary', multiplier: 0.525, offset: -135.90375 }, // Technically Rømer (or Roemer)
-				{ name: 'newton', symbol: 'N', type: 'customary', multiplier: 0.33, offset: -90.13949999999998 }, // May have rounding error
-				{ name: 'delisle', symbol: 'D', type: 'customary', multiplier: -1.5, offset: 559.7249999999999 }, // May have rounding error
-				{ name: 'reaumur', symbol: 'Ré', otherSymbols: ['Re', 'R'], type: 'customary', multiplier: -1.5, offset: 559.7249999999999 } // Technically Réaumur
+				{ name: 'romer', symbol: 'Rø', otherSymbols: ['R'], type: 'customary', multiplier: 0.525, offset: 135.90375 }, // Technically Rømer (or Roemer)
+				{ name: 'newton', symbol: 'N', type: 'customary', multiplier: 0.33, offset: 90.13949999999998 }, // May have rounding error
+				{ name: 'delisle', symbol: 'D', type: 'customary', multiplier: -1.5, offset: -559.7249999999999 }, // May have rounding error
+				{ name: 'reaumur', symbol: 'Ré', otherSymbols: ['Re', 'R'], type: 'customary', multiplier: -1.5, offset: -559.7249999999999 } // Technically Réaumur
 			]
 		},
 		amountOfSubstance: {

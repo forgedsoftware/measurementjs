@@ -65,6 +65,14 @@
 	// TOP LEVEL FUNCTIONS
 
 	measurement = function (value, measurementSystem, unitName) {
+		if (!measurementSystem || !unitName) {
+			var jsonResult = JSON.parse(value);
+			if (jsonResult != null && typeof jsonResult === 'object') {
+				return new Measure(jsonResult.value, jsonResult.system, jsonResult.unit);
+			} else {
+				throw new Error("Invalid parameters provided.")
+			}
+		}
 		return new Measure(value, measurementSystem, unitName);
 	};
 
@@ -177,6 +185,7 @@
 			this.measurementSystem = measurementSystem;
 			this.unitName = unitName;
 			this.unit = measurement.unit(measurementSystem, unitName);
+			// TODO: Validate measure is valid...
 		}
 
 		MeasureImpl.prototype.unitIsBaseUnit = function (unitName) {
@@ -223,7 +232,8 @@
 		MeasureImpl.prototype.toJson = function () {
 			return JSON.stringify({
 				value: this.value,
-				unit: this.unitName
+				unit: this.unitName,
+				system: this.measurementSystem
 			});
 		}
 

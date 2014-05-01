@@ -5,7 +5,7 @@ console.log(window);
 test('construct measurement', function () {
 	expect (1);
 
-	deepEqual(m(12, 'length', 'metre').toJson(), '{\"value\":12,\"unit\":\"metre\"}');
+	deepEqual(m(12, 'length', 'metre').toJson(), '{\"value\":12,\"unit\":\"metre\",\"system\":\"length\"}');
 });
 
 test('simple conversion from base unit to other unit', function () {
@@ -34,4 +34,17 @@ test('formatting of units when printed in short form', function () {
 	deepEqual(m(456.1315454, 'temperature', 'fahrenheit').toShortFixed(2), '456.13 F');
 	deepEqual(m(1.6456113, 'temperature', 'fahrenheit').toShortFixed(3), '1.646 F');
 	deepEqual(m(1.6456113, 'temperature', 'fahrenheit').toShortPrecision(3), '1.65 F');
+});
+
+test('can create a new measure from a json string', function () {
+	expect(1);
+
+	deepEqual(m('{ \"value\": 25, \"system\": \"time\", \"unit\":\"month\"}').toShortFixed(), '25 month');
+});
+
+test('json string used to create measure equivalent to json string from serialising measure', function () {
+	expect(1);
+
+	var json = '{ \"value\": 25, \"system\": \"time\", \"unit\":\"month\"}';
+	deepEqual(JSON.parse(m(json).toJson()), JSON.parse(json));
 });

@@ -11,7 +11,7 @@
 		siPrefixes,
 		siBinaryPrefixes,
 		Dimension,
-		Measure,
+		Quantity,
 		MeasurementSystems,
 		Unit;
 
@@ -65,16 +65,16 @@
 
 	// TOP LEVEL FUNCTIONS
 
-	measurement = function (value, measurementSystem, unitName) {
-		if (!measurementSystem || !unitName) {
+	measurement = function (value, systemName, unitName) {
+		if (!systemName || !unitName) {
 			var jsonResult = JSON.parse(value);
 			if (jsonResult != null && typeof jsonResult === 'object') {
-				return new Measure(jsonResult.value, jsonResult.system, jsonResult.unit);
+				return new Quantity(jsonResult.value, jsonResult.system, jsonResult.unit);
 			} else {
 				throw new Error("Invalid parameters provided.")
 			}
 		}
-		return new Measure(value, measurementSystem, unitName);
+		return new Quantity(value, systemName, unitName);
 	};
 
 	measurement.configure = function (config) {
@@ -255,10 +255,10 @@
 		return DimensionImpl;
 	}());
 
-	// MEASURE OBJECT
+	// QUANTITY OBJECT
 
-	Measure = (function () { // TODO: Consider renaming to Quantity ????
-		function MeasureImpl(value, systemName, dimensions) { // TODO: Uncertainties (+-0.4), (+0.5), (-0.9), (+0.8, -0.2)... maybe { plusMinus: 1.2, plus: 1.4, minus: 1.2, sigma: 3 }
+	Quantity = (function () { // TODO: Consider renaming to Quantity ????
+		function QuantityImpl(value, systemName, dimensions) { // TODO: Uncertainties (+-0.4), (+0.5), (-0.9), (+0.8, -0.2)... maybe { plusMinus: 1.2, plus: 1.4, minus: 1.2, sigma: 3 }
 			var currentDimension;
 
 			this.value = value;
@@ -282,7 +282,7 @@
 			// In addition to getting the unit, this also validates the system and unit exist.
 			// this.unit = measurement.unit(systemName, dimensions);
 
-			// TODO: Consider: If a system/unit is changed while measure exists is this a problem?
+			// TODO: Consider: If a system/unit is changed while quantity exists is this a problem?
 			// Should we not be storing the unit and only getting it when needed?
 		}
 
@@ -300,8 +300,8 @@
 			return (typeof value === 'object') && !isArray(value);
 		}
 
-		function isMeasure (value) {
-			return value && value.constructor === MeasureImpl;
+		function isQuantity (value) {
+			return value && value.constructor === QuantityImpl;
 		}
 
 		function isDimension (value) {
@@ -323,7 +323,7 @@
 		// Notes:
 		// http://en.wikipedia.org/wiki/Conversion_of_units
 
-		MeasureImpl.prototype.allDimensionsUsingBaseUnit = function () {
+		QuantityImpl.prototype.allDimensionsUsingBaseUnit = function () {
 			var dimension;
 
 			for (dimension in this.dimensions) {
@@ -334,12 +334,12 @@
 			return true;
 		}
 
-		MeasureImpl.prototype.convert = function (unitName) {
-			var measureAsBase = this.convertToBase();
-			return convertFromBase(measureAsBase, unitName);
+		QuantityImpl.prototype.convert = function (unitName) {
+			var quantityAsBase = this.convertToBase();
+			return convertFromBase(quantityAsBase, unitName);
 		}
 
-		MeasureImpl.prototype.convertToBase = function () {
+		QuantityImpl.prototype.convertToBase = function () {
 			var convertedValue, dimension;
 
 			convertedValue = this.value;
@@ -347,7 +347,7 @@
 				// TODO: Only if dimension needs to be converted to base
 				convertedValue = this.dimensions[dimension].convertToBase(convertedValue);
 			}
-			return new Measure(convertedValue, this.systemName, this.dimensions);
+			return new Quantity(convertedValue, this.systemName, this.dimensions);
 		}
 
 		// This function is hidden as exposing it should be unnecessary.
@@ -360,22 +360,22 @@
 				// TODO: Only if unitName is related to a to the specific dimension
 				convertedValue = self.dimensions[dimension].convertFromBase(convertedValue, unitName);
 			}
-			return new Measure(convertedValue, self.systemName, self.dimensions);
+			return new Quantity(convertedValue, self.systemName, self.dimensions);
 		}
 
-		// Measure Math & Dimensional Analysis
+		// Quantity Math & Dimensional Analysis
 
 		// Notes:
 		// http://en.wikipedia.org/wiki/Units_conversion_by_factor-label
 		// http://en.wikipedia.org/wiki/Dimensional_analysis
 
-		// TODO: Do we need a way of representing scalar quantities as a measure?
+		// TODO: Do we need a way of representing scalar amounts as a quantity?
 		// E.g. (5).multiply((5, 'time','seconds')) == (25, 'time', 'seconds')
 			// Currently we only allow the opposite: (5, 'time','seconds').multiply((5)) == (25, 'time', 'seconds')
 
-		MeasureImpl.prototype.multiply = function (value) {
-			if (!isMeasure(value)) { // Assume scalar
-				return new Measure(this.value * value, this.systemName, this.dimensions); // TODO check value is number
+		QuantityImpl.prototype.multiply = function (value) {
+			if (!isQuantity(value)) { // Assume scalar
+				return new Quantity(this.value * value, this.systemName, this.dimensions); // TODO check value is number
 			}
 
 			// Mainpulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
@@ -384,14 +384,14 @@
 			// 10 s^2/m * 20 kg/hr => ?? s.kg/m
 			// 10 s^2/m * 20 kg/s * 1/3600 => 10 * 20 * 1/3600 s.kg/m
 
-			// Find new system if exists based on units... (Measures with aggregate units without a system are ok)
+			// Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
 			
-			// Create new measure with values multiplied and new units
+			// Create new quantity with values multiplied and new units
 		}
 
-		MeasureImpl.prototype.divide = function (value) {
-			if (!isMeasure(value)) { // Assume scalar
-				return new Measure(this.value / value, this.systemName, this.dimensions); // TODO check value is number
+		QuantityImpl.prototype.divide = function (value) {
+			if (!isQuantity(value)) { // Assume scalar
+				return new Quantity(this.value / value, this.systemName, this.dimensions); // TODO check value is number
 			}
 
 			// Mainpulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
@@ -400,86 +400,86 @@
 			// 10 s^2/m / 20 kg/hr => ?? s^3/m.kg
 			// 10 s^2/m / 20 kg/s * 3600 => 10 / 20 * 3600 s^3/m.kg
 
-			// Find new system if exists based on units... (Measures with aggregate units without a system are ok)
+			// Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
 			
-			// Create new measure with values multiplied and new units
+			// Create new quantity with values multiplied and new units
 		}
 
-		MeasureImpl.prototype.add = function (value) {
-			if (!isMeasure(value)) { // Assume shorthand
-				return new Measure(this.value + value, this.systemName, this.dimensions); // TODO check value is number
+		QuantityImpl.prototype.add = function (value) {
+			if (!isQuantity(value)) { // Assume shorthand
+				return new Quantity(this.value + value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (value.systemName !== this.systemName) { // Commensurability
-				throw new Error('In order to add a measure it must have the same system.');
+				throw new Error('In order to add a quantity it must have the same system.');
 			}
 
 			// Convert value into same units
-			// Create new measure with values added directly and the initial measure's units
+			// Create new quantity with values added directly and the initial quantity's units
 		}
 
-		MeasureImpl.prototype.subtract = function (value) {
-			if (!isMeasure(value)) { // Assume shorthand
-				return new Measure(this.value - value, this.systemName, this.dimensions); // TODO check value is number
+		QuantityImpl.prototype.subtract = function (value) {
+			if (!isQuantity(value)) { // Assume shorthand
+				return new Quantity(this.value - value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (value.systemName !== this.systemName) { // Commensurability
-				throw new Error('In order to subtract a measure it must have the same system.');
+				throw new Error('In order to subtract a quantity it must have the same system.');
 			}
 
 			// Convert value into same units
-			// Create new measure with values subtracted directly and the initial measure's units
+			// Create new quantity with values subtracted directly and the initial quantity's units
 
 		}
 
 		// Math Aliases
 
-		MeasureImpl.prototype.times = function (value) { return this.multiply(value); }
-		MeasureImpl.prototype.minus = function (value) { return this.subtract(value); }
+		QuantityImpl.prototype.times = function (value) { return this.multiply(value); }
+		QuantityImpl.prototype.minus = function (value) { return this.subtract(value); }
 
 		// JS Math Extensions
 
-		MeasureImpl.prototype.abs = function () { return createMeasure(this, Math.abs); }
-		MeasureImpl.prototype.acos = function () { return createMeasure(this, Math.acos); }
-		MeasureImpl.prototype.asin = function () { return createMeasure(this, Math.asin); }
-		MeasureImpl.prototype.atan = function () { return createMeasure(this, Math.atan); }
-		MeasureImpl.prototype.ceil = function () { return createMeasure(this, Math.ceil); }
-		MeasureImpl.prototype.cos = function () { return createMeasure(this, Math.cos); }
-		MeasureImpl.prototype.exp = function () { return createMeasure(this, Math.exp); }
-		MeasureImpl.prototype.floor = function () { return createMeasure(this, Math.floor); }
-		MeasureImpl.prototype.log = function () { return createMeasure(this, Math.log); }
-		MeasureImpl.prototype.round = function () { return createMeasure(this, Math.round); }
-		MeasureImpl.prototype.sin = function () { return createMeasure(this, Math.sin); }
-		MeasureImpl.prototype.sqrt = function () { return createMeasure(this, Math.sqrt); }
-		MeasureImpl.prototype.tan = function () { return createMeasure(this, Math.tan); }
+		QuantityImpl.prototype.abs = function () { return createQuantity(this, Math.abs); }
+		QuantityImpl.prototype.acos = function () { return createQuantity(this, Math.acos); }
+		QuantityImpl.prototype.asin = function () { return createQuantity(this, Math.asin); }
+		QuantityImpl.prototype.atan = function () { return createQuantity(this, Math.atan); }
+		QuantityImpl.prototype.ceil = function () { return createQuantity(this, Math.ceil); }
+		QuantityImpl.prototype.cos = function () { return createQuantity(this, Math.cos); }
+		QuantityImpl.prototype.exp = function () { return createQuantity(this, Math.exp); }
+		QuantityImpl.prototype.floor = function () { return createQuantity(this, Math.floor); }
+		QuantityImpl.prototype.log = function () { return createQuantity(this, Math.log); }
+		QuantityImpl.prototype.round = function () { return createQuantity(this, Math.round); }
+		QuantityImpl.prototype.sin = function () { return createQuantity(this, Math.sin); }
+		QuantityImpl.prototype.sqrt = function () { return createQuantity(this, Math.sqrt); }
+		QuantityImpl.prototype.tan = function () { return createQuantity(this, Math.tan); }
 
-		function createMeasure(self, mathFunction) {
-			return new Measure(mathFunction(self.value), self.systemName, self.dimensions);
+		function createQuantity(self, mathFunction) {
+			return new Quantity(mathFunction(self.value), self.systemName, self.dimensions);
 		}
 
-		MeasureImpl.prototype.atan2 = function (y) {
+		QuantityImpl.prototype.atan2 = function (y) {
 			// Assume y is a number and a scalar
-			return new Measure(Math.atan2(y, this.value), this.systemName, this.dimensions);
+			return new Quantity(Math.atan2(y, this.value), this.systemName, this.dimensions);
 		}
 
-		MeasureImpl.prototype.pow = function (y) {
+		QuantityImpl.prototype.pow = function (y) {
 			// Assume y is a number and a scalar
-			return new Measure(Math.pow(this.value, y), this.systemName, this.dimensions);
+			return new Quantity(Math.pow(this.value, y), this.systemName, this.dimensions);
 		}
 
-		MeasureImpl.prototype.max = function () {
+		QuantityImpl.prototype.max = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-			return new Measure(Math.max.apply(null, args), this.systemName, this.dimensions);
+			return new Quantity(Math.max.apply(null, args), this.systemName, this.dimensions);
 		}
 
-		MeasureImpl.prototype.min = function () {
+		QuantityImpl.prototype.min = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-			return new Measure(Math.min.apply(null, args), this.systemName, this.dimensions);
+			return new Quantity(Math.min.apply(null, args), this.systemName, this.dimensions);
 		}
 
 		// Helper functions
 
-		MeasureImpl.prototype.serialised = function () {
+		QuantityImpl.prototype.serialised = function () {
 			var dimension, jsonResult;
 
 			jsonResult = {
@@ -498,11 +498,11 @@
 			return jsonResult;
 		}
 
-		MeasureImpl.prototype.toJson = function () {
+		QuantityImpl.prototype.toJson = function () {
 			return JSON.stringify(this.serialised());
 		}
 
-		MeasureImpl.prototype.toShortFixed = function (lengthOfDecimal) {
+		QuantityImpl.prototype.toShortFixed = function (lengthOfDecimal) {
 			var dimension, dimensionString = '';
 			for (dimension in this.dimensions) {
 				dimensionString += this.dimensions[dimension].toShortString();
@@ -510,7 +510,7 @@
 			return this.value.toFixed(lengthOfDecimal) + ' ' + dimensionString;
 		}
 
-		MeasureImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
+		QuantityImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
 			var dimension, dimensionString = '';
 			for (dimension in this.dimensions) {
 				dimensionString += this.dimensions[dimension].toShortString();
@@ -518,7 +518,7 @@
 			return this.value.toPrecision(numberOfSigFigs) + ' ' + dimensionString;
 		}
 
-		return MeasureImpl;
+		return QuantityImpl;
 	}());
 
 	// http://www.bipm.org/en/si/si_brochure/

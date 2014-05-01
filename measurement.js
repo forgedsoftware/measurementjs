@@ -151,42 +151,53 @@
 	}
 
 	measurement.system = function (systemName) {
-		return systems[systemName];
+		var system;
+
+		system = systems[systemName];
+		if (!system) {
+			throw new Error('Specified system does not exist');
+		}
+		return system;
 	}
 
 	measurement.unit = function (systemName, unitName) {
 		var system, unit;
 
-		system = systems[systemName];
-		if (system) {
-			unit = system.units[unitName];
-			console.log(system);
+		system = measurement.system(systemName);
+		unit = system.units[unitName];
+		if (!unit) {
+			throw new Error('Specified unit does not exist in this system');
 		}
-		if (unit) {
-			return unit;
-		}
-		return {
-			name: unitName,
-			multiplier: 1,
-			offset: 0,
-			isFakeUnit: true // Maybe provide a warning here instead?
-		};
+		return unit;
 	}
 
 	measurement.baseUnit = function (systemName, baseUnitName) {
 		// Sets the base unit of a system to be the baseUnitName
+		var system = measurement.system(systemName);
+		var unit = measurement.unit(systemName, baseUnitName);
+		system.baseUnit = unit.name;
 	};
 
 	// MEASURE OBJECT
 
 	Measure = (function () { // TODO: Consider renaming to Quantity ????
-		function MeasureImpl(value, measurementSystem, unitName) {
+		function MeasureImpl(value, measurementSystem, unitName) { // TODO: Uncertainties (+-0.4), (+0.5), (-0.9), (+0.8, -0.2)... maybe { plusMinus: 1.2, plus: 1.4, minus: 1.2, sigma: 3 }
 			this.value = value;
 			this.measurementSystem = measurementSystem;
 			this.unitName = unitName;
+
+			// In addition to getting the unit, this also validates the system and unit exist.
 			this.unit = measurement.unit(measurementSystem, unitName);
-			// TODO: Validate measure is valid...
+
+			// TODO: Consider: If a system/unit is changed while measure exists is this a problem?
+			// Should we not be storing the unit and only getting it when needed?
 		}
+
+		
+		// Unit Conversion
+
+		// Notes:
+		// http://en.wikipedia.org/wiki/Conversion_of_units
 
 		MeasureImpl.prototype.unitIsBaseUnit = function (unitName) {
 			return (measurement.system(this.measurementSystem).baseUnit === this.unitName);
@@ -229,6 +240,80 @@
 			}
 		}
 
+		// Measure Math & Dimensional Analysis
+
+		// Notes:
+		// http://en.wikipedia.org/wiki/Units_conversion_by_factor-label
+		// http://en.wikipedia.org/wiki/Dimensional_analysis
+
+		MeasureImpl.prototype.multiply = function (value) {
+			if (!isMeasure(value)) { // Assume scalar
+				return new Measure(this.value * value, this.measurementSystem, this.unitName); // TODO check is number
+			}
+
+			// Mainpulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
+
+			// Convert value into same units, prefering original units
+			// 10 s^2/m * 20 kg/hr => ?? s.kg/m
+			// 10 s^2/m * 20 kg/s * 1/3600 => 10 * 20 * 1/3600 s.kg/m
+
+			// Find new system if exists based on units... (Measures with aggregate units without a system are ok)
+			
+			// Create new measure with values multiplied and new units
+		}
+
+		MeasureImpl.prototype.divide = function (value) {
+			if (!isMeasure(value)) { // Assume scalar
+				return new Measure(this.value / value, this.measurementSystem, this.unitName); // TODO check is number
+			}
+
+			// Mainpulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
+
+			// Convert value into same units, prefering original units
+			// 10 s^2/m / 20 kg/hr => ?? s^3/m.kg
+			// 10 s^2/m / 20 kg/s * 3600 => 10 / 20 * 3600 s^3/m.kg
+
+			// Find new system if exists based on units... (Measures with aggregate units without a system are ok)
+			
+			// Create new measure with values multiplied and new units
+		}
+
+		MeasureImpl.prototype.add = function (value) {
+			if (!isMeasure(value)) { // Assume shorthand
+				return new Measure(this.value + value, this.measurementSystem, this.unitName); // TODO check is number
+			}
+			if (value.measurementSystem !== this.measurementSystem) {
+				throw new Error('In order to add a measure it must have the same system.');
+			}
+
+			// Convert value into same units
+			// Create new measure with values added directly and the initial measure's units
+		}
+
+		MeasureImpl.prototype.subtract = function (value) {
+			if (!isMeasure(value)) { // Assume shorthand
+				return new Measure(this.value - value, this.measurementSystem, this.unitName); // TODO check is number
+			}
+			if (value.measurementSystem !== this.measurementSystem) {
+				throw new Error('In order to subtract a measure it must have the same system.');
+			}
+
+			// Convert value into same units
+			// Create new measure with values subtracted directly and the initial measure's units
+
+		}
+
+		function isMeasure (value) {
+			return value && value.constructor === MeasureImpl;
+		}
+
+		// Math Aliases
+
+		MeasureImpl.prototype.times = function (value) { return this.multiply(value); }
+		MeasureImpl.prototype.minus = function (value) { return this.subtract(value); }
+
+		// Helper functions
+
 		MeasureImpl.prototype.toJson = function () {
 			return JSON.stringify({
 				value: this.value,
@@ -269,7 +354,10 @@
 		length: { // radius, wavelength
 			symbol: 'L',
 			baseUnit: 'metre',
-			units: []
+			units: [
+				{ name: 'metre', symbol: 'm', type: 'si' }
+				// More here...
+			]
 		},
 		mass: {
 			symbol: 'M',

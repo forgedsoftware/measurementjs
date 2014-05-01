@@ -47,4 +47,6 @@ test('json string used to create measure equivalent to json string from serialis
 
 	var json = '{ \"value\": 25, \"system\": \"time\", \"unit\":\"month\"}';
 	deepEqual(JSON.parse(m(json).toJson()), JSON.parse(json));
+
+	var cQuantity = m(280, 'temperature', 'kelvin').subtract(m(280, 'temperature', 'kelvin'));
 });

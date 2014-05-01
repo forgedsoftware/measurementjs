@@ -176,6 +176,7 @@
 		var system = measurement.system(systemName);
 		var unit = measurement.unit(systemName, baseUnitName);
 		system.baseUnit = unit.name;
+		// TODO: then we have to change the multiplier/offset for each unit to match that baseUnit
 	};
 
 	// DIMENSION OBJECT
@@ -185,8 +186,16 @@
 			this.systemName = systemName;
 			this.unitName = unitName;
 			this.power = power || 1;
+			this.validateDimension();
+		}
 
-			// TODO: Validate system and unit exist.
+		DimensionImpl.prototype.validateDimension = function () {
+			// Validates that unit and system exist
+			measurement.unit(this.systemName, this.unitName);
+			// Validates power is reasonable
+			if (this.power === 0) {
+				throw new Exception('Dimensions may not have a power of 0');
+			}
 		}
 
 		DimensionImpl.prototype.unitIsBaseUnit = function () {
@@ -206,11 +215,11 @@
 			}
 			unit = measurement.unit(this.systemName, this.unitName);
 			baseUnitName = measurement.system(this.systemName).baseUnit;
+			// Here to validate baseUnit exists
 			baseUnit = measurement.unit(this.systemName, baseUnitName);
 
-			// TODO - Handle Powers!!!
 			this.unitName = baseUnitName; // TODO: Currently this changes the dimension... need to create another instead.
-			return (value * unit.multiplier) + unit.offset; // TODO dimensionality with offsets may not work with compound dimensions.
+			return doConvert(value, this.power, unit, true);
 		}
 
 		DimensionImpl.prototype.convertFromBase = function (value, unitName) {
@@ -221,9 +230,22 @@
 			}
 			unit = measurement.unit(this.systemName, unitName);
 
-			// TODO - Handle Powers!!!
 			this.unitName = unitName; // TODO: Currently this changes the dimension... need to create another instead.
-			return (value - unit.offset) / unit.multiplier; // TODO dimensionality with offsets may not work with compound dimensions.
+			return doConvert(value, this.power, unit, false);
+		}
+
+		function doConvert(value, power, unit, toBase) {
+			var pow, calculatedValue;
+
+			calculatedValue = value;
+			for (pow = 0; pow < Math.abs(power); pow++) {
+				if (toBase ? (power > 0) : (power < 0)) {
+					calculatedValue = (calculatedValue * unit.multiplier) + unit.offset; // TODO dimensionality with offsets may not work with compound dimensions.
+				} else {
+					calculatedValue = (calculatedValue - unit.offset) / unit.multiplier; // TODO dimensionality with offsets may not work with compound dimensions.
+				}
+			}
+			return calculatedValue;
 		}
 
 		// Helper Functions

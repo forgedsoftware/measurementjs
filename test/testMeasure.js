@@ -22,3 +22,16 @@ test('conversion from unit to other unit', function () {
 	deepEqual(m(15, 'time', 'hour').convert('minute').value, 15 * 60);
 	deepEqual(m(0, 'temperature', 'celsius').convert('fahrenheit').value, 32.000000003999965); // TODO: Deal with rounding...
 });
+
+test('formatting of units when printed in short form', function () {
+	expect (6);
+
+	deepEqual(m(15, 'time', 'hour').toShortFixed(), '15 h');
+
+	deepEqual(m(15.23425463237, 'temperature', 'celsius').toShortFixed(), '15 C');
+	deepEqual(m(9.45456, 'temperature', 'fahrenheit').toShortPrecision(), '9.45456 F');
+
+	deepEqual(m(456.1315454, 'temperature', 'fahrenheit').toShortFixed(2), '456.13 F');
+	deepEqual(m(1.6456113, 'temperature', 'fahrenheit').toShortFixed(3), '1.646 F');
+	deepEqual(m(1.6456113, 'temperature', 'fahrenheit').toShortPrecision(3), '1.65 F');
+});

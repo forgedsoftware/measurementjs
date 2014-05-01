@@ -227,6 +227,14 @@
 			});
 		}
 
+		MeasureImpl.prototype.toShortFixed = function (lengthOfDecimal) {
+			return this.value.toFixed(lengthOfDecimal) + ' ' + this.unit.symbol;
+		}
+
+		MeasureImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
+			return this.value.toPrecision(numberOfSigFigs) + ' ' + this.unit.symbol;
+		}
+
 		return MeasureImpl;
 	}());
 

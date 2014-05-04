@@ -6,9 +6,32 @@ var m = require('../measurement.js'),
 
 var DELTA = 1e-8;
 
-test('construct quantity', function () {
-
+test('construct quantity with system', function () {
+	m(12, 'length', 'metre').should.have.property('value', 12);
+	m(12, 'length', 'metre').should.have.property('systemName', 'length');
+	m(12, 'length', 'metre').should.have.property('dimensions').with.lengthOf(1);
 	m(12, 'length', 'metre').serialised().should.eql(JSON.parse('{\"value\":12,\"system\":\"length\",\"unit\":\"metre\"}'));
+});
+
+test('construct quantity without system', function () {
+	m(12, 'metre').should.have.property('value', 12);
+	m(12, 'metre').should.have.property('systemName', 'length');
+	m(12, 'metre').should.have.property('dimensions').with.lengthOf(1);
+	m(12, 'metre').serialised().should.eql(JSON.parse('{\"value\":12,\"system\":\"length\",\"unit\":\"metre\"}'));
+});
+
+test('construct quantity with multiple dimensions', function () {
+	var q1 = m(12, [ { unit: 'metre', system: 'length' }, { unit: 'second', system: 'time' }]);
+
+	q1.should.have.property('value', 12);
+	q1.should.have.property('dimensions').with.lengthOf(2);
+});
+
+test('construct quantity with multiple dimensions with no systems', function () {
+	var q1 = m(12, [ 'metre', 'second' ]);
+	
+	q1.should.have.property('value', 12);
+	q1.should.have.property('dimensions').with.lengthOf(2);
 });
 
 test('simple conversion from base unit to other unit', function () {

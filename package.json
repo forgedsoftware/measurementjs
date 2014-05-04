@@ -1,6 +1,6 @@
 {
     "name": "measurement",
-    "version": "0.0.1-1",
+    "version": "0.0.1-2",
     "description": "A measurement package for handling and manipulating quantities.",
     "keywords": [
         "measurement",

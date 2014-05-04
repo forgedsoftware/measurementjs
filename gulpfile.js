@@ -38,7 +38,7 @@ gulp.task('minify', function() {
 
 // Watch Files For Changes
 gulp.task('watch', function() {
-    gulp.watch('**/*.js', ['lint', 'test', 'minify']);
+    gulp.watch('**/*.js', ['build']);
 });
 
 // General Tasks

@@ -87,21 +87,44 @@
 					fn(object[index], index, object);
 				}
 			}
-		}
+		},
+		isString: function (value) {
+			return (typeof value === 'string');
+		},
+		isNumber: function (value) {
+			return (typeof value === 'number');
+		},
+		isArray: function (value) {
+			return (Object.prototype.toString.call(value) === '[object Array]');
+		},
+		isObject: function (value) {
+			return (typeof value === 'object') && !helpers.isArray(value);
+		},
 	};
 
 	// TOP LEVEL FUNCTIONS
 
 	measurement = function (value, systemName, unitName) {
-		if (!systemName || !unitName) {
-			var jsonResult = JSON.parse(value);
-			if (jsonResult !== null && typeof jsonResult === 'object') {
-				return new Quantity(jsonResult.value, jsonResult.system, jsonResult.unit || jsonResult.dimensions);
-			} else {
+		var config;
+
+		if (!systemName && !unitName) {
+			config = JSON.parse(value);
+			if (config === null || typeof config !== 'object') {
 				throw new Error("Invalid parameters provided.");
 			}
+		} else if (!unitName) {
+			config = { value: value };
+			unitName = systemName;
+			if (helpers.isArray(unitName) || helpers.isObject(unitName)) {
+				config.dimensions = unitName;
+			} else {
+				config.unit = unitName;
+				config.system = measurement.systemOfUnit(unitName);
+			}
+		} else {
+			config = { value: value, system: systemName, unit: unitName };
 		}
-		return new Quantity(value, systemName, unitName);
+		return new Quantity(config.value, config.system, config.unit || config.dimensions);
 	};
 
 	measurement.configure = function (config) {
@@ -180,7 +203,7 @@
 
 		system = systems[systemName];
 		if (!system) {
-			throw new Error('Specified system does not exist');
+			throw new Error('Specified system "' + systemName + '" does not exist');
 		}
 		return system;
 	};
@@ -195,7 +218,7 @@
 		system = measurement.system(systemName);
 		unit = system.units[unitName];
 		if (!unit) {
-			throw new Error('Specified unit does not exist in this system');
+			throw new Error('Specified unit "' + unitName + '" does not exist in the system "' + systemName + '"');
 		}
 		return unit;
 	};
@@ -210,6 +233,18 @@
 		return (system.units[unitName]) ? true : false;
 	};
 
+	measurement.systemOfUnit = function (unitName) {
+		var foundSystem;
+
+		helpers.forEach(systems, function (system, systemName) {
+			if (measurement.hasUnit(systemName, unitName)) {
+				foundSystem = systemName;
+			}
+		});
+		// TODO If !foundSystem, look again with alt names
+		return foundSystem;
+	};
+
 	measurement.baseUnit = function (systemName, baseUnitName) {
 		// Sets the base unit of a system to be the baseUnitName
 		var system = measurement.system(systemName);
@@ -222,10 +257,31 @@
 
 	Dimension = (function () {
 		function DimensionImpl(systemName, unitName, power) {
-			this.systemName = systemName;
-			this.unitName = unitName;
-			this.power = power || 1;
+			var config;
+
+			if (!unitName) {
+				config = systemName;
+				if (!helpers.isObject(config)) {
+					if (measurement.systemOfUnit(config)) {
+						config = { unit: config };
+					} else {
+						config = JSON.parse(config);
+						if (config === null || typeof config !== 'object') {
+							throw new Error("Invalid parameters provided.");
+						}
+					}
+				}
+			} else {
+				config = { system: systemName, unit: unitName, power: power };
+			}
+			this.unitName = config.unitName || config.unit;
+			this.systemName = config.systemName || config.system || measurement.systemOfUnit(config.unitName || config.unit);
+			this.power = config.power || 1;
 			this.validateDimension();
+		}
+
+		function isDimension (value) {
+			return value && value.constructor === DimensionImpl;
 		}
 
 		DimensionImpl.prototype.validateDimension = function () {
@@ -339,44 +395,22 @@
 			this.systemName = systemName;
 			
 			this.dimensions = [];
-			if (isString(dimensions)) {
-				this.dimensions.push(new Dimension(systemName, dimensions));
-			} else if (isArray(dimensions)) {
+			var self = this; // TODO tidy this
+			if (helpers.isArray(dimensions)) {
 				helpers.forEach(dimensions, function (dimension) {
-					validateDimension(dimension);
+					self.dimensions.push(new Dimension(dimension));
 				});
-				this.dimensions = dimensions;
-			} else if (isObject()) {
-				validateDimension(dimensions);
-				this.dimensions.push(dimensions);
+			} else {
+				this.dimensions.push(new Dimension(systemName, dimensions));
 			}
 
 			// TODO: Validation
 			// DEPRECATED
 			// In addition to getting the unit, this also validates the system and unit exist.
 			// this.unit = measurement.unit(systemName, dimensions);
-
-			// TODO: Consider: If a system/unit is changed while quantity exists is this a problem?
-			// Should we not be storing the unit and only getting it when needed?
 		}
 
 		// Type Checking
-
-		function isString (value) {
-			return (typeof value === 'string');
-		}
-
-		function isNumber (value) {
-			return (typeof value === 'number');
-		}
-
-		function isArray (value) {
-			return (Object.prototype.toString.call(value) === '[object Array]');
-		}
-
-		function isObject (value) {
-			return (typeof value === 'object') && !isArray(value);
-		}
 
 		function isQuantity (value) {
 			return value && value.constructor === QuantityImpl;
@@ -385,15 +419,6 @@
 		function isDimension (value) {
 			// Not fullproof, but at least validates that the commonly used functions exist
 			return value && typeof value === 'object' && value.convertFromBase && value.convertToBase;
-		}
-
-		// Validation
-
-		function validateDimension(dimension) {
-			if (!isDimension(dimension)) {
-				throw new Error('Dimension is not a valid Dimension object');
-			}
-			dimension.validateDimension();
 		}
 
 		// Dimension Manipulation

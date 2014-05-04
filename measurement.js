@@ -95,10 +95,10 @@
 	measurement = function (value, systemName, unitName) {
 		if (!systemName || !unitName) {
 			var jsonResult = JSON.parse(value);
-			if (jsonResult != null && typeof jsonResult === 'object') {
+			if (jsonResult !== null && typeof jsonResult === 'object') {
 				return new Quantity(jsonResult.value, jsonResult.system, jsonResult.unit || jsonResult.dimensions);
 			} else {
-				throw new Error("Invalid parameters provided.")
+				throw new Error("Invalid parameters provided.");
 			}
 		}
 		return new Quantity(value, systemName, unitName);
@@ -118,7 +118,7 @@
 		} else {
 			throw new Error('Cannot load file from string in client. Provide object instead.');
 		}
-	}
+	};
 
 	measurement.filterUnits = function (propertyName, value, exclude) {
 		// Filters the available units available based on property... e.g. filterUnits('type', 'si'); // e.g. only use si units
@@ -183,11 +183,11 @@
 			throw new Error('Specified system does not exist');
 		}
 		return system;
-	}
+	};
 
 	measurement.hasSystem = function (systemName) {
 		return (systems[systemName]) ? true : false;
-	}
+	};
 
 	measurement.unit = function (systemName, unitName) {
 		var system, unit;
@@ -198,7 +198,7 @@
 			throw new Error('Specified unit does not exist in this system');
 		}
 		return unit;
-	}
+	};
 
 	measurement.hasUnit = function (systemName, unitName) {
 		var system;
@@ -208,7 +208,7 @@
 		}
 		system = measurement.system(systemName);
 		return (system.units[unitName]) ? true : false;
-	}
+	};
 
 	measurement.baseUnit = function (systemName, baseUnitName) {
 		// Sets the base unit of a system to be the baseUnitName
@@ -235,17 +235,17 @@
 			if (this.power === 0) {
 				throw new Exception('Dimensions may not have a power of 0');
 			}
-		}
+		};
 
 		DimensionImpl.prototype.unitIsBaseUnit = function () {
 			return (measurement.system(this.systemName).baseUnit === this.unitName);
-		}
+		};
 
 		// Returns dimension-value pair: { dimension: {}, value: 123 }
 		DimensionImpl.prototype.convert = function (value, unitName) {
 			var dimValuePair = this.convertToBase();
 			return dimValuePair.dimension.convertFromBase(dimValuePair.value, unitName);
-		}
+		};
 
 		// Returns dimension-value pair: { dimension: {}, value: 123 }
 		DimensionImpl.prototype.convertToBase = function (value) {
@@ -266,7 +266,7 @@
 				dimension: new Dimension(this.systemName, baseUnitName, this.power),
 				value: doConvert(value, this.power, unit, true)
 			};
-		}
+		};
 
 		// Returns dimension-value pair: { dimension: {}, value: 123 }
 		DimensionImpl.prototype.convertFromBase = function (value, unitName) {
@@ -281,7 +281,7 @@
 				dimension: new Dimension(this.systemName, unitName, this.power),
 				value: doConvert(value, this.power, unit, false)
 			};
-		}
+		};
 
 		function doConvert(value, power, unit, toBase) {
 			var pow, calculatedValue;
@@ -301,7 +301,7 @@
 
 		DimensionImpl.prototype.clone = function () {
 			return new Dimension(this.systemName, this.unitName, this.power);
-		}
+		};
 
 		DimensionImpl.prototype.serialised = function () {
 			return {
@@ -309,11 +309,11 @@
 				unit: this.unitName,
 				power: this.power
 			};
-		}
+		};
 
 		DimensionImpl.prototype.toJson = function () {
 			return JSON.stringify(this.serialised());
-		}
+		};
 
 		DimensionImpl.prototype.toShortString = function () {
 			var unit, dimensionString;
@@ -324,7 +324,7 @@
 				dimensionString += '^' + this.power; // TODO - nice way to do powers?
 			}
 			return dimensionString;
-		}
+		};
 
 		return DimensionImpl;
 	}());
@@ -404,7 +404,7 @@
 			// For each dimension
 				// If another dimension has the same system
 					// Combine
-		}
+		};
 
 		// Unit Conversion
 
@@ -420,12 +420,12 @@
 				}
 			});
 			return areAllBase;
-		}
+		};
 
 		QuantityImpl.prototype.convert = function (unitName) {
 			var quantityAsBase = this.convertToBase();
 			return convertFromBase(quantityAsBase, unitName);
-		}
+		};
 
 		// unitName here is optional, if provided it will only convert dimensions with that unitName to base
 		QuantityImpl.prototype.convertToBase = function (unitName) {
@@ -445,7 +445,7 @@
 				}
 			});
 			return new Quantity(convertedValue, this.systemName, newDimensions);
-		}
+		};
 
 		// This function is hidden as exposing it should be unnecessary.
 		// Use convert instead.
@@ -495,7 +495,7 @@
 			// Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
 			
 			// Create new quantity with values multiplied and new units
-		}
+		};
 
 		QuantityImpl.prototype.divide = function (value) {
 			if (isNumber(value)) { // Assume scalar
@@ -514,7 +514,7 @@
 			// Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
 			
 			// Create new quantity with values multiplied and new units
-		}
+		};
 
 		QuantityImpl.prototype.add = function (value) {
 			if (isNumber(value)) { // Assume shorthand
@@ -529,7 +529,7 @@
 
 			// Convert value into same units
 			// Create new quantity with values added directly and the initial quantity's units
-		}
+		};
 
 		QuantityImpl.prototype.subtract = function (value) {
 			if (isNumber(value)) { // Assume shorthand
@@ -545,28 +545,28 @@
 			// Convert value into same units
 			// Create new quantity with values subtracted directly and the initial quantity's units
 
-		}
+		};
 
 		// Math Aliases
 
-		QuantityImpl.prototype.times = function (value) { return this.multiply(value); }
-		QuantityImpl.prototype.minus = function (value) { return this.subtract(value); }
+		QuantityImpl.prototype.times = function (value) { return this.multiply(value); };
+		QuantityImpl.prototype.minus = function (value) { return this.subtract(value); };
 
 		// JS Math Extensions
 
-		QuantityImpl.prototype.abs = function () { return createQuantity(this, Math.abs); }
-		QuantityImpl.prototype.acos = function () { return createQuantity(this, Math.acos); }
-		QuantityImpl.prototype.asin = function () { return createQuantity(this, Math.asin); }
-		QuantityImpl.prototype.atan = function () { return createQuantity(this, Math.atan); }
-		QuantityImpl.prototype.ceil = function () { return createQuantity(this, Math.ceil); }
-		QuantityImpl.prototype.cos = function () { return createQuantity(this, Math.cos); }
-		QuantityImpl.prototype.exp = function () { return createQuantity(this, Math.exp); }
-		QuantityImpl.prototype.floor = function () { return createQuantity(this, Math.floor); }
-		QuantityImpl.prototype.log = function () { return createQuantity(this, Math.log); }
-		QuantityImpl.prototype.round = function () { return createQuantity(this, Math.round); }
-		QuantityImpl.prototype.sin = function () { return createQuantity(this, Math.sin); }
-		QuantityImpl.prototype.sqrt = function () { return createQuantity(this, Math.sqrt); }
-		QuantityImpl.prototype.tan = function () { return createQuantity(this, Math.tan); }
+		QuantityImpl.prototype.abs = function () { return createQuantity(this, Math.abs); };
+		QuantityImpl.prototype.acos = function () { return createQuantity(this, Math.acos); };
+		QuantityImpl.prototype.asin = function () { return createQuantity(this, Math.asin); };
+		QuantityImpl.prototype.atan = function () { return createQuantity(this, Math.atan); };
+		QuantityImpl.prototype.ceil = function () { return createQuantity(this, Math.ceil); };
+		QuantityImpl.prototype.cos = function () { return createQuantity(this, Math.cos); };
+		QuantityImpl.prototype.exp = function () { return createQuantity(this, Math.exp); };
+		QuantityImpl.prototype.floor = function () { return createQuantity(this, Math.floor); };
+		QuantityImpl.prototype.log = function () { return createQuantity(this, Math.log); };
+		QuantityImpl.prototype.round = function () { return createQuantity(this, Math.round); };
+		QuantityImpl.prototype.sin = function () { return createQuantity(this, Math.sin); };
+		QuantityImpl.prototype.sqrt = function () { return createQuantity(this, Math.sqrt); };
+		QuantityImpl.prototype.tan = function () { return createQuantity(this, Math.tan); };
 
 		function createQuantity(self, mathFunction) {
 			return new Quantity(mathFunction(self.value), self.systemName, self.dimensions);
@@ -575,24 +575,24 @@
 		QuantityImpl.prototype.atan2 = function (y) {
 			// Assume y is a number and a scalar
 			return new Quantity(Math.atan2(y, this.value), this.systemName, this.dimensions);
-		}
+		};
 
 		QuantityImpl.prototype.pow = function (y) {
 			// Assume y is a number and a scalar
 			return new Quantity(Math.pow(this.value, y), this.systemName, this.dimensions);
-		}
+		};
 
 		QuantityImpl.prototype.max = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
 			return new Quantity(Math.max.apply(null, args), this.systemName, this.dimensions);
-		}
+		};
 
 		QuantityImpl.prototype.min = function () {
 			// Assume all arguments are numbers
 			var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
 			return new Quantity(Math.min.apply(null, args), this.systemName, this.dimensions);
-		}
+		};
 
 		// Helper functions
 
@@ -613,11 +613,11 @@
 				});
 			}
 			return jsonResult;
-		}
+		};
 
 		QuantityImpl.prototype.toJson = function () {
 			return JSON.stringify(this.serialised());
-		}
+		};
 
 		QuantityImpl.prototype.toShortFixed = function (lengthOfDecimal) {
 			var dimensionString = '';
@@ -625,7 +625,7 @@
 				dimensionString += dimension.toShortString();
 			});
 			return this.value.toFixed(lengthOfDecimal) + ' ' + dimensionString;
-		}
+		};
 
 		QuantityImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
 			var dimensionString = '';
@@ -633,7 +633,7 @@
 				dimensionString += dimension.toShortString();
 			});
 			return this.value.toPrecision(numberOfSigFigs) + ' ' + dimensionString;
-		}
+		};
 
 		return QuantityImpl;
 	}());

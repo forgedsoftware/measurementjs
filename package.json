@@ -11,7 +11,11 @@
 	"contributors": [ "Matthew Harward"	],
 	"dependencies": {},
 	"devDependencies": {
-		"gulp": "latest"
+		"gulp": "latest",
+		"gulp-jshint": "latest",
+		"gulp-uglify": "latest",
+		"gulp-rename": "latest",
+		"moment": "latest"
 	},
 	"engines": {
 		"node": ">= 0.10"

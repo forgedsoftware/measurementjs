@@ -13,7 +13,8 @@
 		Dimension,
 		Quantity,
 		MeasurementSystems,
-		Unit;
+		Unit,
+		helpers;
 
 	var BASE_2 = 2;
 
@@ -62,6 +63,32 @@
 	var siBinaryPrefixTranslationNames = 'yobi_zebi_exbi_pebi_tebi_gibi_mebi_kibi'.split('_');
 	var siBinaryPrefixTranslationSymbols = 'Yi_Zi_Ei_Pi_Ti_Gi_Mi_Ki'.split('_');
 
+	// HELPER FUNCTIONS
+
+	helpers = {
+		isNode: function () {
+			return (typeof module !== 'undefined' && typeof module.exports !== 'undefined');
+		},
+		isAmd: function () {
+			return (typeof define === 'function' && define.amd);
+		},
+		firstPropertyName: function (object) {
+			var prop;
+			for (prop in object) {
+				if (object.hasOwnProperty(prop)) {
+					return prop;
+				}
+			}
+		},
+		forEach: function (object, fn) {
+			var index;
+			for (index in object) {
+				if (object.hasOwnProperty(index)) {
+					fn(object[index], index, object);
+				}
+			}
+		}
+	};
 
 	// TOP LEVEL FUNCTIONS
 
@@ -111,19 +138,17 @@
 	};
 
 	function addSystems(systems) {
-		var systemName;
-
-		for (systemName in systems) {
-			addSystem(systems[systemName] || {}, systemName);
-		}
+		helpers.forEach(systems, function (system, systemName) {
+			addSystem(system || {}, systemName);
+		});
 	}
 
 	function addSystem(system, systemName) {
+		// TODO: Maybe system and unit should be first class objects?
 		var unitName,
 			units = {};
 
-		for (unitName in system.units) {
-			var unit = system.units[unitName];
+		helpers.forEach(system.units, function (unit, unitName) {
 			// temp
 			unitName = unit.name;
 
@@ -140,12 +165,12 @@
 				usage: unit.usage || [], // e.g. [ 'US Imperial', 'UK Imperial' ]
 				range: unit.range || [] // TODO... { '1':{ min: 80, max: 150, displayName: '1' }, '2': {...}} e.g. Gas Mark
 			};
-		}
+		});
 
 		systems[systemName] = {
 			name: systemName,
 			symbol: system.symbol || '',
-			baseUnit: system.baseUnit || firstPropertyName(units) || '',
+			baseUnit: system.baseUnit || helpers.firstPropertyName(units) || '',
 			units: units || []
 		};
 	}
@@ -317,9 +342,9 @@
 			if (isString(dimensions)) {
 				this.dimensions.push(new Dimension(systemName, dimensions));
 			} else if (isArray(dimensions)) {
-				for (currentDimension in dimensions) {
-					validateDimension(dimensions[currentDimension]);
-				}
+				helpers.forEach(dimensions, function (dimension) {
+					validateDimension(dimension);
+				});
 				this.dimensions = dimensions;
 			} else if (isObject()) {
 				validateDimension(dimensions);
@@ -387,14 +412,14 @@
 		// http://en.wikipedia.org/wiki/Conversion_of_units
 
 		QuantityImpl.prototype.allDimensionsUsingBaseUnit = function () {
-			var dimension;
+			var areAllBase = true;
 
-			for (dimension in this.dimensions) {
-				if (!this.dimensions[dimension].unitIsBaseUnit()) {
-					return false;
+			helpers.forEach(this.dimensions, function (dimension) {
+				if (!dimension.unitIsBaseUnit()) {
+					areAllBase = false;
 				}
-			}
-			return true;
+			});
+			return areAllBase;
 		}
 
 		QuantityImpl.prototype.convert = function (unitName) {
@@ -404,38 +429,42 @@
 
 		// unitName here is optional, if provided it will only convert dimensions with that unitName to base
 		QuantityImpl.prototype.convertToBase = function (unitName) {
-			var convertedValue, dimension, dimValuePair, newDimensions;
+			var convertedValue, newDimensions;
 
 			newDimensions = [];
 			convertedValue = this.value;
-			for (dimension in this.dimensions) {
-				if (!unitName || this.dimensions[dimension].unitName === unitName) {
-					dimValuePair = this.dimensions[dimension].convertToBase(convertedValue);
+			helpers.forEach(this.dimensions, function (dimension) {
+				var dimValuePair;
+
+				if (!unitName || dimension.unitName === unitName) {
+					dimValuePair = dimension.convertToBase(convertedValue);
 					convertedValue = dimValuePair.value;
 					newDimensions.push(dimValuePair.dimension);
 				} else {
-					newDimensions.push(self.dimensions[dimension].clone());
+					newDimensions.push(dimension.clone());
 				}
-			}
+			});
 			return new Quantity(convertedValue, this.systemName, newDimensions);
 		}
 
 		// This function is hidden as exposing it should be unnecessary.
 		// Use convert instead.
 		function convertFromBase(self, unitName) {
-			var convertedValue, dimension, dimValuePair, newDimensions;
+			var convertedValue, newDimensions;
 
 			newDimensions = [];
 			convertedValue = self.value;
-			for (dimension in self.dimensions) {
-				if (measurement.hasUnit(self.dimensions[dimension].systemName, unitName)) {
-					dimValuePair = self.dimensions[dimension].convertFromBase(convertedValue, unitName);
+			helpers.forEach(self.dimensions, function (dimension) {
+				var dimValuePair;
+
+				if (measurement.hasUnit(dimension.systemName, unitName)) {
+					dimValuePair = dimension.convertFromBase(convertedValue, unitName);
 					convertedValue = dimValuePair.value;
 					newDimensions.push(dimValuePair.dimension);
 				} else {
-					newDimensions.push(self.dimensions[dimension].clone());
+					newDimensions.push(dimension.clone());
 				}
-			}
+			});
 			return new Quantity(convertedValue, self.systemName, newDimensions);
 		}
 
@@ -568,7 +597,7 @@
 		// Helper functions
 
 		QuantityImpl.prototype.serialised = function () {
-			var dimension, jsonResult;
+			var jsonResult;
 
 			jsonResult = {
 				value: this.value,
@@ -579,9 +608,9 @@
 				jsonResult.unit = this.dimensions[0].unitName;
 			} else {
 				jsonResult.dimensions = [];
-				for (dimension in this.dimensions) {
-					jsonResult.dimensions.push(this.dimensions[dimension].serialised());
-				}
+				helpers.forEach(this.dimensions, function (dimension) {
+					jsonResult.dimensions.push(dimension.serialised());
+				});
 			}
 			return jsonResult;
 		}
@@ -591,18 +620,18 @@
 		}
 
 		QuantityImpl.prototype.toShortFixed = function (lengthOfDecimal) {
-			var dimension, dimensionString = '';
-			for (dimension in this.dimensions) {
-				dimensionString += this.dimensions[dimension].toShortString();
-			}
+			var dimensionString = '';
+			helpers.forEach(this.dimensions, function (dimension) {
+				dimensionString += dimension.toShortString();
+			});
 			return this.value.toFixed(lengthOfDecimal) + ' ' + dimensionString;
 		}
 
 		QuantityImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
-			var dimension, dimensionString = '';
-			for (dimension in this.dimensions) {
-				dimensionString += this.dimensions[dimension].toShortString();
-			}
+			var dimensionString = '';
+			helpers.forEach(this.dimensions, function (dimension) {
+				dimensionString += dimension.toShortString();
+			});
 			return this.value.toPrecision(numberOfSigFigs) + ' ' + dimensionString;
 		}
 
@@ -760,32 +789,13 @@
 		return UnitImpl;
 	}());
 
-	// HELPER FUNCTIONS
-
-	function isNode() {
-		return (typeof module !== 'undefined' && typeof module.exports !== 'undefined');
-	}
-
-	function isAmd() {
-		return (typeof define === 'function' && define.amd);
-	}
-
-	function firstPropertyName(object) {
-		var prop;
-		for (prop in object) {
-			if (object.hasOwnProperty(prop)) {
-				return prop;
-			}
-		}
-	}
-
 	/**
 	 * Initial setup
 	 * Expose module for NodeJS, AMD, raw client side JS.
 	 */
-	if (isNode()) {
+	if (helpers.isNode()) {
 		module.exports = measurement;
-	} else if (isAmd()) {
+	} else if (helpers.isAmd()) {
 		define([], function() {
 			return measurement;
 		});

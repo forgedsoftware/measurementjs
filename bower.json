@@ -1,0 +1,12 @@
+{
+    "name": "measurement",
+    "version": "0.0.1-1",
+    "main": "measurement.js",
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "test",
+        "gulpfile.js",
+        "package.json"
+    ]
+}

@@ -1,30 +1,41 @@
 {
-	"name": "measurement",
-	"version": "0.0.1",
-	"description": "A measurement package for handling and manipulating quantities.",
-	"keywords": [ "measurement", "measure", "unit", "convert", "quantity", "size" ],
-	"homepage": "http://www.measurementjs.com",
-	"author": {
-		"name": "Forged Software",
-		"url": "http://www.forgedsoftware.com"
-	},
-	"contributors": [ "Matthew Harward"	],
-	"dependencies": {},
-	"devDependencies": {
-		"mocha": "latest",
-		"gulp": "latest",
-		"gulp-jshint": "latest",
-		"gulp-uglify": "latest",
-		"gulp-rename": "latest",
-		"gulp-mocha": "latest",
-		"moment": "latest"
-	},
-	"engines": {
-		"node": ">= 0.10"
-	},
-	"repository": {
-		"type" : "git",
-		"url" : "http://github.com/mharward/measurementjs.git"
-	},
-	"licenses": "MIT"
+    "name": "measurement",
+    "version": "0.0.1-1",
+    "description": "A measurement package for handling and manipulating quantities.",
+    "keywords": [
+        "measurement",
+        "measure",
+        "unit",
+        "convert",
+        "quantity",
+        "size"
+    ],
+    "homepage": "http://www.measurementjs.com",
+    "author": {
+        "name": "Forged Software",
+        "url": "http://www.forgedsoftware.com"
+    },
+    "contributors": [
+        "Matthew Harward"
+    ],
+    "main": "measurement.js",
+    "dependencies": {},
+    "devDependencies": {
+        "mocha": "latest",
+        "gulp": "latest",
+        "gulp-jshint": "latest",
+        "gulp-uglify": "latest",
+        "gulp-rename": "latest",
+        "gulp-mocha": "latest",
+        "gulp-bump": "latest",
+        "moment": "latest"
+    },
+    "engines": {
+        "node": ">= 0.10"
+    },
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/mharward/measurementjs.git"
+    },
+    "licenses": "MIT"
 }

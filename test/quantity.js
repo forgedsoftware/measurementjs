@@ -48,5 +48,5 @@ test('json string used to create quantity equivalent to json string from seriali
 	json = '{ \"value\": 25, \"system\": \"time\", \"unit\":\"month\"}';
 	JSON.parse(m(json).toJson()).should.eql(JSON.parse(json));
 
-	cQuantity = m(280, 'temperature', 'kelvin').subtract(m(280, 'temperature', 'kelvin'));
+	//cQuantity = m(280, 'temperature', 'kelvin').subtract(m(280, 'temperature', 'kelvin'));
 });

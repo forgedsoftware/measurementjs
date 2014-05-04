@@ -5,7 +5,15 @@ var gulp = require('gulp'),
 	jshint = require('gulp-jshint'),
 	uglify = require('gulp-uglify'),
 	rename = require('gulp-rename'),
-	mocha = require('gulp-mocha');
+	mocha = require('gulp-mocha'),
+	bump = require('gulp-bump');
+
+// Bump Version
+gulp.task('bump', function () {
+	return gulp.src(['./package.json', './bower.json'])
+		.pipe(bump({ type: 'prerelease', indent: 4 }))
+		.pipe(gulp.dest('./'));
+});
 
 // Lint JS Files
 gulp.task('lint', function() {
@@ -33,5 +41,9 @@ gulp.task('watch', function() {
     gulp.watch('**/*.js', ['lint', 'test', 'minify']);
 });
 
+// General Tasks
+gulp.task('build', ['lint', 'test', 'minify']);
+gulp.task('release', ['build', 'bump']);
+
 // Default Task
-gulp.task('default', ['lint', 'test', 'minify', 'watch']);
+gulp.task('default', ['build', 'watch']);

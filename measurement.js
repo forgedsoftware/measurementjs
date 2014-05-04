@@ -399,6 +399,10 @@
 		// Dimension Manipulation
 
 		QuantityImpl.prototype.simplify = function () {
+
+			// TODO: Implement
+			throw new Error('Not yet implemented');
+
 			// TODO If two dimensions have the same system or one dimension has a power === 0 we can simplify
 
 			// For each dimension
@@ -486,6 +490,9 @@
 				throw new Error('Cannot multiply something that is not a number or a Quantity.');
 			}
 
+			// TODO: Implement
+			throw new Error('Not yet implemented');
+
 			// Mainpulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
 
 			// Convert value into same units, prefering original units
@@ -504,6 +511,9 @@
 			if (!isQuantity(value)) {
 				throw new Error('Cannot divide something that is not a number or a Quantity.');
 			}
+
+			// TODO: Implement
+			throw new Error('Not yet implemented');
 
 			// Mainpulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
 
@@ -527,6 +537,9 @@
 				throw new Error('In order to add a quantity it must have the same system.');
 			}
 
+			// TODO: Implement
+			throw new Error('Not yet implemented');
+
 			// Convert value into same units
 			// Create new quantity with values added directly and the initial quantity's units
 		};
@@ -541,6 +554,9 @@
 			if (value.systemName !== this.systemName) { // Commensurability
 				throw new Error('In order to subtract a quantity it must have the same system.');
 			}
+
+			// TODO: Implement
+			throw new Error('Not yet implemented');
 
 			// Convert value into same units
 			// Create new quantity with values subtracted directly and the initial quantity's units

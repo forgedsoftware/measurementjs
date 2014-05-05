@@ -389,6 +389,10 @@
 			return new Dimension(this.systemName, this.unitName, this.power);
 		};
 
+		DimensionImpl.prototype.invert = function () {
+			return new Dimension(this.systemName, this.unitName, -this.power);
+		};
+
 		DimensionImpl.prototype.serialised = function () {
 			return {
 				system: this.systemName,
@@ -509,7 +513,19 @@
 			return areAllBase;
 		};
 
+		QuantityImpl.prototype.isCommensurable = function (quantity) {
+			if (!isQuantity(quantity)) {
+				throw new Error('Cannot check the commensurability of something that is not a Quantity');
+			}
+			// TODO: Check commensurability of dimensions
+			return true;
+		};
+
 		QuantityImpl.prototype.convert = function (unitName) {
+			if (isQuantity(unitName) && !this.isCommensurable(unitName)) {
+				throw new Error('In order to add a quantity it must be commensurable');
+			}
+			// TODO: Handle taking a quantity and converting the first quantity based on it's dimensions
 			var quantityAsBase = this.convertToBase();
 			return convertFromBase(quantityAsBase, unitName);
 		};
@@ -561,10 +577,6 @@
 		// http://en.wikipedia.org/wiki/Units_conversion_by_factor-label
 		// http://en.wikipedia.org/wiki/Dimensional_analysis
 
-		// TODO: Do we need a way of representing scalar amounts as a quantity?
-		// E.g. (5).multiply((5, 'time','seconds')) == (25, 'time', 'seconds')
-			// Currently we only allow the opposite: (5, 'time','seconds').multiply((5)) == (25, 'time', 'seconds')
-
 		QuantityImpl.prototype.multiply = function (value) {
 			if (helpers.isNumber(value)) { // Assume scalar
 				return new Quantity(this.value * value, this.systemName, this.dimensions);
@@ -573,18 +585,24 @@
 				throw new Error('Cannot multiply something that is not a number or a Quantity.');
 			}
 
-			// TODO: Implement
-			throw new Error('Not yet implemented');
+			// Manipulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
+			var allDimensions = [];
+			helpers.forEach(this.dimensions, function (dimension) {
+				allDimensions.push(dimension.clone());
+			});
+			helpers.forEach(value.dimensions, function (dimension) {
+				allDimensions.push(dimension.clone());
+			});
+			var multipliedQuantity = new Quantity(this.value * value.value, this.systemName, allDimensions);
 
-			// Mainpulate provided units s^2/m * kg/hr => s.kg/m (does not work with things with an offset like celsius or fahrenheit)
-
-			// Convert value into same units, prefering original units
+			// Convert value into same units, preferring original units
 			// 10 s^2/m * 20 kg/hr => ?? s.kg/m
 			// 10 s^2/m * 20 kg/s * 1/3600 => 10 * 20 * 1/3600 s.kg/m
 
-			// Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
+			// TODO: Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
 			
 			// Create new quantity with values multiplied and new units
+			return multipliedQuantity.simplify();
 		};
 
 		QuantityImpl.prototype.divide = function (value) {
@@ -595,18 +613,24 @@
 				throw new Error('Cannot divide something that is not a number or a Quantity.');
 			}
 
-			// TODO: Implement
-			throw new Error('Not yet implemented');
-
-			// Mainpulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
+			// Manipulate provided units s^2/m / kg/hr => s^2/m * hr/kg => s^3/m.kg (does not work with things with an offset like celsius or fahrenheit)
+			var allDimensions = [];
+			helpers.forEach(this.dimensions, function (dimension) {
+				allDimensions.push(dimension.clone());
+			});
+			helpers.forEach(value.dimensions, function (dimension) {
+				allDimensions.push(dimension.invert());
+			});
+			var dividedQuantity = new Quantity(this.value / value.value, this.systemName, allDimensions);
 
 			// Convert value into same units, prefering original units
 			// 10 s^2/m / 20 kg/hr => ?? s^3/m.kg
 			// 10 s^2/m / 20 kg/s * 3600 => 10 / 20 * 3600 s^3/m.kg
 
-			// Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
+			// TODO: Find new system if exists based on units... (Quantities with aggregate units without a system are ok)
 			
 			// Create new quantity with values multiplied and new units
+			return dividedQuantity.simplify();
 		};
 
 		QuantityImpl.prototype.add = function (value) {
@@ -614,17 +638,13 @@
 				return new Quantity(this.value + value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (!isQuantity(value)) {
-				throw new Error('Cannot add something that is not a number or a Quantity.');
+				throw new Error('Cannot add something that is not a number or a Quantity');
 			}
-			if (value.systemName !== this.systemName) { // Commensurability
-				throw new Error('In order to add a quantity it must have the same system.');
-			}
-
-			// TODO: Implement
-			throw new Error('Not yet implemented');
 
 			// Convert value into same units
+			var convertedQuantity = value.convert(this);
 			// Create new quantity with values added directly and the initial quantity's units
+			return new Quantity(this.value + convertedQuantity.value, this.systemName, this.dimensions);
 		};
 
 		QuantityImpl.prototype.subtract = function (value) {
@@ -632,18 +652,13 @@
 				return new Quantity(this.value - value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (!isQuantity(value)) {
-				throw new Error('Cannot subtract something that is not a number or a Quantity.');
+				throw new Error('Cannot subtract something that is not a number or a Quantity');
 			}
-			if (value.systemName !== this.systemName) { // Commensurability
-				throw new Error('In order to subtract a quantity it must have the same system.');
-			}
-
-			// TODO: Implement
-			throw new Error('Not yet implemented');
 
 			// Convert value into same units
+			var convertedQuantity = value.convert(this);
 			// Create new quantity with values subtracted directly and the initial quantity's units
-
+			return new Quantity(this.value - convertedQuantity.value, this.systemName, this.dimensions);
 		};
 
 		// Math Aliases

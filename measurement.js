@@ -110,9 +110,13 @@
 		var config;
 
 		if (!systemName && !unitName) {
-			config = JSON.parse(value);
-			if (config === null || typeof config !== 'object') {
-				throw new Error("Invalid parameters provided.");
+			if (helpers.isNumber(value)) {
+				config = { value: value };
+			} else {
+				config = JSON.parse(value);
+				if (config === null || typeof config !== 'object') {
+					throw new Error("Invalid parameters provided.");
+				}
 			}
 		} else if (!unitName) {
 			config = { value: value };
@@ -428,7 +432,7 @@
 					currentDimension.validate();
 					self.dimensions.push(currentDimension);
 				});
-			} else {
+			} else if (dimensions) {
 				currentDimension = new Dimension(systemName, dimensions);
 				currentDimension.validate();
 				this.dimensions.push(currentDimension);
@@ -455,25 +459,27 @@
 
 		QuantityImpl.prototype.simplify = function () {
 			// TODO: Handle cases where the dimension is not a base dimension, e.g. speed and needs to
-			// be simplified into two base dimensions first.
+			// be simplified into two base dimensions first => length^1.time^-1
 			// Maybe a pre step simplifying the compound steps? OR all dimensions could always be saved as base values?
 
-			var newDimensions = [];
-			var processedDimensions = [];
-			var computedValue = this.value;
-			var self = this;
+			var newDimensions = [],
+				processedDimensions = [],
+				computedValue = this.value,
+				self = this;
 
 			helpers.forEach(this.dimensions, function (dimension, index) {
+				var newDimension, i, dimValuePair;
+
 				if (processedDimensions.indexOf(index) >= 0) {
 					return;
 				}
 				if (dimension.power === 0) {
 					return;
 				}
-				var newDimension = dimension.clone();
-				for (var i = index  + 1; i < self.dimensions.length; i++) {
+				newDimension = dimension.clone();
+				for (i = index  + 1; i < self.dimensions.length; i++) {
 					if (dimension.systemName === self.dimensions[i].systemName) {
-						var dimValuePair = newDimension.combine(computedValue, self.dimensions[i]);
+						dimValuePair = newDimension.combine(computedValue, self.dimensions[i]);
 						newDimension = dimValuePair.dimension;
 						computedValue = dimValuePair.value;
 						processedDimensions.push(i);
@@ -560,7 +566,7 @@
 			// Currently we only allow the opposite: (5, 'time','seconds').multiply((5)) == (25, 'time', 'seconds')
 
 		QuantityImpl.prototype.multiply = function (value) {
-			if (isNumber(value)) { // Assume scalar
+			if (helpers.isNumber(value)) { // Assume scalar
 				return new Quantity(this.value * value, this.systemName, this.dimensions);
 			}
 			if (!isQuantity(value)) {
@@ -582,7 +588,7 @@
 		};
 
 		QuantityImpl.prototype.divide = function (value) {
-			if (isNumber(value)) { // Assume scalar
+			if (helpers.isNumber(value)) { // Assume scalar
 				return new Quantity(this.value / value, this.systemName, this.dimensions);
 			}
 			if (!isQuantity(value)) {
@@ -604,7 +610,7 @@
 		};
 
 		QuantityImpl.prototype.add = function (value) {
-			if (isNumber(value)) { // Assume shorthand
+			if (helpers.isNumber(value)) { // Assume shorthand
 				return new Quantity(this.value + value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (!isQuantity(value)) {
@@ -622,7 +628,7 @@
 		};
 
 		QuantityImpl.prototype.subtract = function (value) {
-			if (isNumber(value)) { // Assume shorthand
+			if (helpers.isNumber(value)) { // Assume shorthand
 				return new Quantity(this.value - value, this.systemName, this.dimensions); // TODO check value is number
 			}
 			if (!isQuantity(value)) {
@@ -643,6 +649,7 @@
 		// Math Aliases
 
 		QuantityImpl.prototype.times = function (value) { return this.multiply(value); };
+		QuantityImpl.prototype.plus = function (value) { return this.add(value); };
 		QuantityImpl.prototype.minus = function (value) { return this.subtract(value); };
 
 		// JS Math Extensions
@@ -693,13 +700,16 @@
 			var jsonResult;
 
 			jsonResult = {
-				value: this.value,
-				system: this.systemName
+				value: this.value
 			};
+
+			if (this.systemName) {
+				jsonResult.system = this.systemName;
+			}
 
 			if (this.dimensions.length === 1 && this.dimensions[0].power === 1) {
 				jsonResult.unit = this.dimensions[0].unitName;
-			} else {
+			} else if (this.dimensions.length > 0) {
 				jsonResult.dimensions = [];
 				helpers.forEach(this.dimensions, function (dimension) {
 					jsonResult.dimensions.push(dimension.serialised());
@@ -713,19 +723,25 @@
 		};
 
 		QuantityImpl.prototype.toShortFixed = function (lengthOfDecimal) {
-			var dimensionString = '';
+			var dimensionString = ' ';
 			helpers.forEach(this.dimensions, function (dimension) {
 				dimensionString += dimension.toShortString();
 			});
-			return this.value.toFixed(lengthOfDecimal) + ' ' + dimensionString;
+			if (dimensionString.length <= 1) {
+				dimensionString = '';
+			}
+			return this.value.toFixed(lengthOfDecimal) + dimensionString;
 		};
 
 		QuantityImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
-			var dimensionString = '';
+			var dimensionString = ' ';
 			helpers.forEach(this.dimensions, function (dimension) {
 				dimensionString += dimension.toShortString();
 			});
-			return this.value.toPrecision(numberOfSigFigs) + ' ' + dimensionString;
+			if (dimensionString.length <= 1) {
+				dimensionString = '';
+			}
+			return this.value.toPrecision(numberOfSigFigs) + dimensionString;
 		};
 
 		return QuantityImpl;
@@ -873,7 +889,7 @@
 	};
 	measurement.add({ systems: MeasurementSystems });
 
-	// Do we need this? Can unit just be a dumb object?
+	// TODO: Do we need this? Can unit just be a dumb object?
 	Unit = (function () {
 		function UnitImpl(config) {
 

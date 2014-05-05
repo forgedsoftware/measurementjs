@@ -81,10 +81,12 @@
 			}
 		},
 		forEach: function (object, fn) {
-			var index;
+			var index, isArray;
+
+			isArray = helpers.isArray(object);
 			for (index in object) {
 				if (object.hasOwnProperty(index)) {
-					fn(object[index], index, object);
+					fn(object[index], isArray ? parseInt(index) : index, object);
 				}
 			}
 		},
@@ -276,15 +278,14 @@
 			}
 			this.unitName = config.unitName || config.unit;
 			this.systemName = config.systemName || config.system || measurement.systemOfUnit(config.unitName || config.unit);
-			this.power = config.power || 1;
-			this.validateDimension();
+			this.power = (config.power !== null && config.power !== undefined) ? config.power : 1; // 0 is a valid result here
 		}
 
 		function isDimension (value) {
 			return value && value.constructor === DimensionImpl;
 		}
 
-		DimensionImpl.prototype.validateDimension = function () {
+		DimensionImpl.prototype.validate = function () {
 			// Validates that unit and system exist
 			measurement.unit(this.systemName, this.unitName);
 			// Validates power is reasonable
@@ -353,6 +354,31 @@
 			return calculatedValue;
 		}
 
+		DimensionImpl.prototype.combine = function (value, otherDimension) {
+			var dimValuePair, aggregatePower, computedValue;
+
+			// Some validation
+			otherDimension.validate();
+			if (this.systemName !== otherDimension.systemName) {
+				throw new Error('Dimensions have different systems');
+			}
+
+			// Do conversion if necessary
+			if (this.unitName !== otherDimension.unitName) {
+				dimValuePair = otherDimension.convert(value, this.unitName);
+				computedValue = dimValuePair.value;
+				aggregatePower = this.power + dimValuePair.dimension.power;
+			} else {
+				computedValue = value;
+				aggregatePower = this.power + otherDimension.power;
+			}
+
+			return {
+				dimension: new Dimension(this.systemName, this.unitName, aggregatePower),
+				value: computedValue
+			};
+		};
+
 		// Helper Functions
 
 		DimensionImpl.prototype.clone = function () {
@@ -389,19 +415,23 @@
 
 	Quantity = (function () {
 		function QuantityImpl(value, systemName, dimensions) { // TODO: Uncertainties (+-0.4), (+0.5), (-0.9), (+0.8, -0.2)... maybe { plusMinus: 1.2, plus: 1.4, minus: 1.2, sigma: 3 }
-			var currentDimension;
+			var currentDimension,
+				self = this;
 
 			this.value = value;
 			this.systemName = systemName;
 			
 			this.dimensions = [];
-			var self = this; // TODO tidy this
 			if (helpers.isArray(dimensions)) {
 				helpers.forEach(dimensions, function (dimension) {
-					self.dimensions.push(new Dimension(dimension));
+					currentDimension = new Dimension(dimension);
+					currentDimension.validate();
+					self.dimensions.push(currentDimension);
 				});
 			} else {
-				this.dimensions.push(new Dimension(systemName, dimensions));
+				currentDimension = new Dimension(systemName, dimensions);
+				currentDimension.validate();
+				this.dimensions.push(currentDimension);
 			}
 
 			// TODO: Validation
@@ -424,15 +454,37 @@
 		// Dimension Manipulation
 
 		QuantityImpl.prototype.simplify = function () {
+			// TODO: Handle cases where the dimension is not a base dimension, e.g. speed and needs to
+			// be simplified into two base dimensions first.
+			// Maybe a pre step simplifying the compound steps? OR all dimensions could always be saved as base values?
 
-			// TODO: Implement
-			throw new Error('Not yet implemented');
+			var newDimensions = [];
+			var processedDimensions = [];
+			var computedValue = this.value;
+			var self = this;
 
-			// TODO If two dimensions have the same system or one dimension has a power === 0 we can simplify
-
-			// For each dimension
-				// If another dimension has the same system
-					// Combine
+			helpers.forEach(this.dimensions, function (dimension, index) {
+				if (processedDimensions.indexOf(index) >= 0) {
+					return;
+				}
+				if (dimension.power === 0) {
+					return;
+				}
+				var newDimension = dimension.clone();
+				for (var i = index  + 1; i < self.dimensions.length; i++) {
+					if (dimension.systemName === self.dimensions[i].systemName) {
+						var dimValuePair = newDimension.combine(computedValue, self.dimensions[i]);
+						newDimension = dimValuePair.dimension;
+						computedValue = dimValuePair.value;
+						processedDimensions.push(i);
+					}
+				}
+				if (newDimension.power !== 0) {
+					newDimensions.push(newDimension);
+				}
+				processedDimensions.push(index);
+			});	
+			return new Quantity(this.value, this.systemName, newDimensions);
 		};
 
 		// Unit Conversion

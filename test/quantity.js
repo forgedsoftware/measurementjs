@@ -73,3 +73,30 @@ test('json string used to create quantity equivalent to json string from seriali
 
 	//cQuantity = m(280, 'temperature', 'kelvin').subtract(m(280, 'temperature', 'kelvin'));
 });
+
+// SIMPLIFY DIMENSIONS
+
+test('simple combine of dimensions', function () {
+	var q1, q2;
+
+	q1 = m(12, [ 'second', 'second' ]);
+	q1.should.have.property('value', 12);
+	q1.should.have.property('dimensions').with.lengthOf(2);
+
+	q2 = q1.simplify();
+	q2.should.have.property('dimensions').with.lengthOf(1);
+	q2.dimensions[0].should.have.property('power', 2);
+});
+
+test('simplify dimensions with power 0', function () {
+	var q1, q2;
+
+	q1 = m(12, [ { unit: 'second' }, { unit: 'second', power: -1 }, 'metre' ]);
+	q1.should.have.property('value', 12);
+	q1.should.have.property('dimensions').with.lengthOf(3);
+
+	q2 = q1.simplify();
+	q2.should.have.property('dimensions').with.lengthOf(1);
+	q2.dimensions[0].should.have.property('power', 1);
+	q2.dimensions[0].should.have.property('unitName', 'metre');
+});

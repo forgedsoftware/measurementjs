@@ -22,6 +22,7 @@
     "dependencies": {},
     "devDependencies": {
         "mocha": "latest",
+        "should": "latest",
         "gulp": "latest",
         "gulp-jshint": "latest",
         "gulp-uglify": "latest",

@@ -29,6 +29,8 @@
         "gulp-rename": "latest",
         "gulp-mocha": "latest",
         "gulp-bump": "latest",
+        "gulp-util": "latest",
+        "js-beautify": "latest",
         "moment": "latest"
     },
     "engines": {

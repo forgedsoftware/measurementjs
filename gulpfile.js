@@ -6,6 +6,7 @@ var gulp = require('gulp'),
 	uglify = require('gulp-uglify'),
 	rename = require('gulp-rename'),
 	mocha = require('gulp-mocha'),
+	jsonToJs = require('./jsonToJs'),
 	bump = require('gulp-bump');
 
 // Bump Version
@@ -28,6 +29,14 @@ gulp.task('test', function() {
 		.pipe(mocha({ ui: 'tdd', reporter: 'nyan' }));
 });
 
+// JSON to JS Systems
+gulp.task('systems', function() {
+	return gulp.src('./common/systems/*.json')
+		.pipe(jsonToJs())
+		.pipe(rename({ extname: ".js" }))
+		.pipe(gulp.dest('./systems/'));
+});
+
 // Minify JS
 gulp.task('minify', function() {
 	return gulp.src('./measurement.js')
@@ -42,7 +51,7 @@ gulp.task('watch', function() {
 });
 
 // General Tasks
-gulp.task('build', ['lint', 'test', 'minify']);
+gulp.task('build', ['systems', 'lint', 'test', 'minify']);
 gulp.task('release', ['build', 'bump']);
 
 // Default Task

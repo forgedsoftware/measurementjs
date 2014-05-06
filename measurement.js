@@ -383,6 +383,14 @@
 			};
 		};
 
+		DimensionImpl.prototype.isCommensurableMatch = function (dimension) {
+			if (!isDimension(dimension)) {
+				throw new Error('Provided parameter must be a Dimension');
+			}
+			return this.systemName === dimension.systemName &&
+				this.power === dimension.power;
+		};
+
 		// Helper Functions
 
 		DimensionImpl.prototype.clone = function () {
@@ -513,21 +521,57 @@
 			return areAllBase;
 		};
 
+		QuantityImpl.prototype.isScalar = function () {
+			return (this.dimensions.length === 0);
+		};
+
 		QuantityImpl.prototype.isCommensurable = function (quantity) {
 			if (!isQuantity(quantity)) {
 				throw new Error('Cannot check the commensurability of something that is not a Quantity');
 			}
-			// TODO: Check commensurability of dimensions
-			return true;
+			// Scalars
+			if (this.dimensions.length === 0 && quantity.dimensions.length === 0) {
+				return true;
+			}
+
+			var simplifiedThis = this.simplify();
+			var simplifiedQuantity = quantity.simplify();
+
+			if (simplifiedThis.dimensions.length !== simplifiedQuantity.dimensions.length) {
+				return false;
+			}
+
+			var allHaveMatch = true;
+			helpers.forEach(simplifiedThis.dimensions, function (dimension) {
+				var foundMatch = false;
+				helpers.forEach(simplifiedQuantity.dimensions, function (otherDimension) {
+					if (dimension.isCommensurableMatch(otherDimension)) {
+						foundMatch = true;
+					}
+				});
+				if (!foundMatch) {
+					allHaveMatch = false;
+				}
+			});
+			return allHaveMatch;
 		};
 
 		QuantityImpl.prototype.convert = function (unitName) {
-			if (isQuantity(unitName) && !this.isCommensurable(unitName)) {
-				throw new Error('In order to add a quantity it must be commensurable');
+			var convertedQuantity, quantityAsBase = this.convertToBase();
+
+			if (isQuantity(unitName)) {
+				if (!this.isCommensurable(unitName)) {
+					throw new Error('In order to convert based upon a quantity they must be commensurable');
+				}
+				// Handle taking a quantity and converting the first quantity based on it's dimensions
+				convertedQuantity = quantityAsBase;
+				helpers.forEach(unitName.dimensions, function (dimension) {
+					convertedQuantity = convertFromBase(convertedQuantity, dimension.unitName);
+				});
+			} else {
+				convertedQuantity = convertFromBase(quantityAsBase, unitName);
 			}
-			// TODO: Handle taking a quantity and converting the first quantity based on it's dimensions
-			var quantityAsBase = this.convertToBase();
-			return convertFromBase(quantityAsBase, unitName);
+			return convertedQuantity;
 		};
 
 		// unitName here is optional, if provided it will only convert dimensions with that unitName to base

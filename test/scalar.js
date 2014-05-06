@@ -85,3 +85,9 @@ test('printing scalars should produce straight value', function () {
 	m(345.32454).toShortFixed(3).should.equal('345.325');
 	m(345.32454).toShortPrecision(4).should.equal('345.3');
 });
+
+test('isScalar method should only be true if a scalar', function () {
+	m(10).isScalar().should.be.true;
+	m(-4).isScalar().should.be.true;
+	m(10, 'metre').isScalar().should.be.false;
+});

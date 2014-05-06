@@ -285,9 +285,13 @@
 			this.power = (config.power !== null && config.power !== undefined) ? config.power : 1; // 0 is a valid result here
 		}
 
+		// Type Checking
+
 		function isDimension (value) {
 			return value && value.constructor === DimensionImpl;
 		}
+
+		// Validation
 
 		DimensionImpl.prototype.validate = function () {
 			// Validates that unit and system exist
@@ -297,6 +301,8 @@
 				throw new Exception('Dimensions may not have a power of 0');
 			}
 		};
+
+		// Conversion
 
 		DimensionImpl.prototype.unitIsBaseUnit = function () {
 			return (measurement.system(this.systemName).baseUnit === this.unitName);
@@ -435,7 +441,7 @@
 				self = this;
 
 			this.value = value;
-			this.systemName = systemName;
+			this.systemName = systemName; // TODO: Use this properly??
 			
 			this.dimensions = [];
 			if (helpers.isArray(dimensions)) {
@@ -450,10 +456,7 @@
 				this.dimensions.push(currentDimension);
 			}
 
-			// TODO: Validation
-			// DEPRECATED
-			// In addition to getting the unit, this also validates the system and unit exist.
-			// this.unit = measurement.unit(systemName, dimensions);
+			this.validate();
 		}
 
 		// Type Checking
@@ -462,10 +465,13 @@
 			return value && value.constructor === QuantityImpl;
 		}
 
-		function isDimension (value) {
-			// Not fullproof, but at least validates that the commonly used functions exist
-			return value && typeof value === 'object' && value.convertFromBase && value.convertToBase;
-		}
+		// Validation
+
+		QuantityImpl.prototype.validate = function () {
+			if (typeof this.value !== 'number') {
+				throw new Error('The value of a quantity must be a number');
+			}
+		};
 
 		// Dimension Manipulation
 

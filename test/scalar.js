@@ -11,6 +11,10 @@ test('create a basic scalar', function () {
 	m(2).should.have.property('value', 2);
 });
 
+test('creating a scalar quantity with NaN should be valid', function () {
+	m(Number.NaN).value.should.be.NaN;
+});
+
 test('test multiplying scalars', function () {
 	m(2).multiply(3).should.have.property('value', 6);
 	m(-3).multiply(-4).should.have.property('value', 12);

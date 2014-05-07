@@ -6,7 +6,11 @@ var gulp = require('gulp'),
 	uglify = require('gulp-uglify'),
 	rename = require('gulp-rename'),
 	mocha = require('gulp-mocha'),
+	concat = require('gulp-concat'),
 	jsonToJs = require('./jsonToJs'),
+	fs = require('fs'),
+	path = require('path'),
+	es = require('event-stream'),
 	bump = require('gulp-bump');
 
 // Bump Version
@@ -37,22 +41,37 @@ gulp.task('systems', function() {
 		.pipe(gulp.dest('./systems/'));
 });
 
-// Minify JS
-gulp.task('minify', function() {
-	return gulp.src('./measurement.js')
-		.pipe(rename('measurement.min.js'))
-		.pipe(uglify())
-		.pipe(gulp.dest('min/'));
+// Concatinate Files & Minify
+gulp.task('concat', function() {
+	var files = getFiles('./systems/');
+
+	var tasks = files.map(function (file) {
+		return gulp.src([ './systems/' + file, './measurement.js'])
+			.pipe(concat('./measurement_' + file))
+			.pipe(gulp.dest('./built/'))
+			.pipe(rename({ suffix: '.min' }))
+			.pipe(uglify())
+			.pipe(gulp.dest('min/'));
+	});
+	return es.concat.apply(null, tasks);
 });
 
 // Watch Files For Changes
 gulp.task('watch', function() {
-    gulp.watch('**/*.js', ['lint', 'test', 'minify']);
+    gulp.watch('**/*.js', ['lint', 'test', 'concat']);
 });
 
 // General Tasks
-gulp.task('build', ['systems', 'lint', 'test', 'minify']);
+gulp.task('build', ['systems', 'lint', 'test', 'concat']);
 gulp.task('release', ['build', 'bump']);
 
 // Default Task
 gulp.task('default', ['build', 'watch']);
+
+// Helper Functions
+
+function getFiles(dir){
+	return fs.readdirSync(dir).filter(function (file) {
+		return fs.statSync(path.join(dir, file)).isFile();
+	});
+}

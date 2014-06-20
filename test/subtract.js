@@ -1,7 +1,7 @@
 /*jslint node: true */
 'use strict';
 
-var m = require('../measurement.js'),
+var m = require('../built/measurement_full.js'),
 	should = require('should');
 
 var DELTA = 1e-8;

@@ -8,6 +8,7 @@ var gulp = require('gulp'),
 	mocha = require('gulp-mocha'),
 	concat = require('gulp-concat'),
 	jsonToJs = require('./jsonToJs'),
+	replaceSystems = require('./replaceSystems'),
 	fs = require('fs'),
 	path = require('path'),
 	es = require('event-stream'),
@@ -36,18 +37,21 @@ gulp.task('test', function() {
 // JSON to JS Systems
 gulp.task('systems', function() {
 	return gulp.src('./common/systems/*.json')
-		.pipe(jsonToJs())
-		.pipe(rename({ extname: ".js" }))
+		.pipe(jsonToJs({ standAlone: true }))
+		.pipe(rename({ extname: '.js' }))
 		.pipe(gulp.dest('./systems/'));
 });
 
 // Concatinate Files & Minify
 gulp.task('concat', function() {
-	var files = getFiles('./systems/');
+	var files = getFiles('./common/systems/');
 
 	var tasks = files.map(function (file) {
-		return gulp.src([ './systems/' + file, './measurement.js'])
-			.pipe(concat('./measurement_' + file))
+		return gulp.src('./common/systems/' + file)
+			.pipe(jsonToJs({ standAlone: false }))
+			.pipe(replaceSystems('./measurement.js'))
+			.pipe(rename('./measurement_' + file))
+			.pipe(rename({ extname: '.js' }))
 			.pipe(gulp.dest('./built/'))
 			.pipe(rename({ suffix: '.min' }))
 			.pipe(uglify())

@@ -5,7 +5,8 @@ var Stream = require('stream'),
 	jsbeautify  = require('js-beautify').js_beautify,
 	PluginError = require('gulp-util').PluginError;
 
-function gulpJsonToJs (obj) {
+function gulpJsonToJs (config) {
+	config = config || {};
 
 	var stream = new Stream.Transform({objectMode: true});
 
@@ -65,8 +66,22 @@ function gulpJsonToJs (obj) {
 	stream._transform = function (file, unused, callback) {
 		try {
 			var json = JSON.parse(file.contents.toString('utf8'));
-			json = '// This file is generated from ./common/systems/' + file.relative + ' \n' +
-				'var systems = ' + convertToText(json) + ';';
+			if (config.standAlone) {
+				json = '// This file is generated from ./common/systems/' + file.relative + ' \n' +
+					'(function (factory) {\n' +
+						'if (typeof define === \'function\' && define.amd) {\n' +
+							'define([\'measurement\'], factory); // AMD\n' +
+						'} else if (typeof exports === \'object\') {\n' +
+							'module.exports = factory(require(\'../measurement\')); // Node\n' +
+						'} else {\n' +
+							'factory(window.measurement); // Browser global\n' +
+						'}\n' +
+					'}(function (measurement) {\n' +
+						'return measurement.add(' + convertToText(json) + ');\n' +
+					'}));\n';
+			} else {
+				json = 'MeasurementSystems = ' + convertToText(json) + ';\n';
+			}
 			json = jsbeautify(json, {
 				indent_with_tabs: true,
 				brace_style: 'collapse'

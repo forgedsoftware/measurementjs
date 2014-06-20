@@ -1,28 +1,3 @@
-// This file is generated from ./common/systems/full.json 
-var systems = {
-	systems: {
-		time: {
-			symbol: 'T',
-			baseUnit: 'second',
-			units: {
-				second: {
-					symbol: 's',
-					otherSymbols: ['sec'],
-					type: 'si'
-				},
-				minute: {
-					symbol: 'min',
-					type: 'customary',
-					multiplier: 60
-				}
-			}
-		},
-		length: {}
-	},
-	siPrefixes: [],
-	siBinaryPrefixes: []
-};
-
 /**
  *
  *
@@ -43,6 +18,7 @@ var systems = {
 
 	var BASE_2 = 2;
 
+// Types: si (can have milli, kilo etc...), customary (si calls this off-system), binary, fractional, whole
 	systems = {};
 
 	siPrefixes = { 	// TODO... I'm going have to use a bignumber library aren't I? :( https://github.com/MikeMcl/big.js/
@@ -203,9 +179,6 @@ var systems = {
 			units = {};
 
 		helpers.forEach(system.units, function (unit, unitName) {
-			// temp
-			unitName = unit.name;
-
 			units[unitName] = {
 				name: unitName,
 				displayName: unit.displayName || unitName || '',
@@ -225,7 +198,7 @@ var systems = {
 			name: systemName,
 			symbol: system.symbol || '',
 			baseUnit: system.baseUnit || helpers.firstPropertyName(units) || '',
-			units: units || []
+			units: units || {}
 		};
 	}
 
@@ -552,6 +525,7 @@ var systems = {
 			return areAllBase;
 		};
 
+		// TODO: scalar is the wrong terminology!!!!
 		QuantityImpl.prototype.isScalar = function () {
 			return (this.dimensions.length === 0);
 		};
@@ -837,147 +811,269 @@ var systems = {
 		return QuantityImpl;
 	}());
 
-	// http://www.bipm.org/en/si/si_brochure/
-	// http://www.bipm.org/utils/common/documents/jcgm/JCGM_200_2008_E.pdf
-
 	MeasurementSystems = {
-		time: {
-			symbol: 'T',
-			baseUnit: 'second',
-			units: [
-				{ name: 'second', symbol: 's', otherSymbols: ['sec'], type: 'si' }, // Types: si (can have milli, kilo etc...), customary (si calls this off-system), binary, fractional, whole
-				{ name: 'minute', symbol: 'min', type: 'customary', multiplier: 60 },
-				{ name: 'hour', symbol: 'h', otherSymbols: ['hr'], type: 'customary', multiplier: 3600 },
-				{ name: 'day', symbol: 'day', type: 'customary', multiplier: 86400 }, // Possible Base
-				{ name: 'week', symbol: 'week', type: 'customary', multiplier: 604800 },
-				{ name: 'month', symbol: 'month', type: 'customary', estimation: true, multiplier: 2629740 }, // Possible Base
-				{ name: 'year', symbol: 'yr', type: 'customary', multiplier: 31557600 }, // Possible Base
-				{ name: 'ke', symbol: 'yr', type: 'customary', systems: [ 'traditional Chinese' ], multiplier: 864 },
-			]
+		systems: {
+			time: {
+				symbol: 'T',
+				otherNames: ['duration'],
+				baseUnit: 'second',
+				units: {
+					second: {
+						symbol: 's',
+						otherSymbols: ['sec'],
+						type: 'si'
+					},
+					minute: {
+						symbol: 'min',
+						type: 'customary',
+						multiplier: 60
+					},
+					hour: {
+						symbol: 'h',
+						otherSymbols: ['hr'],
+						type: 'customary',
+						multiplier: 3600
+					},
+					day: {
+						symbol: 'day',
+						type: 'customary',
+						multiplier: 86400,
+						notes: 'Possible Base'
+					},
+					week: {
+						symbol: 'week',
+						type: 'customary',
+						multiplier: 604800
+					},
+					month: {
+						symbol: 'month',
+						type: 'customary',
+						estimation: true,
+						multiplier: 2629740,
+						notes: 'Possible Base'
+					},
+					year: {
+						symbol: 'yr',
+						type: 'customary',
+						multiplier: 31557600,
+						notes: 'Possible Base'
+					},
+					ke: {
+						symbol: 'ke',
+						type: 'customary',
+						systems: ['traditional Chinese'],
+						multiplier: 864
+					},
+					decade: {
+						symbol: 'decade',
+						type: 'customary',
+						multiplier: 315576000
+					},
+					century: {
+						symbol: 'C',
+						type: 'customary',
+						multiplier: 3155760000
+					},
+					millennium: {
+						symbol: 'M',
+						type: 'customary',
+						multiplier: 31557600000
+					}
+				}
+			},
+			length: {
+				symbol: 'L',
+				otherNames: ['distance', 'radius', 'wavelength'],
+				baseUnit: 'metre',
+				units: {
+					metre: {
+						symbol: 'm',
+						type: 'si'
+					}
+				}
+			},
+			mass: {
+				symbol: 'M',
+				baseUnit: 'kilogram',
+				units: {}
+			},
+			electricCurrent: {
+				symbol: 'I',
+				baseUnit: 'ampere',
+				units: {}
+			},
+			temperature: {
+				symbol: 'Θ',
+				baseUnit: 'kelvin',
+				units: {
+					kelvin: {
+						symbol: 'K',
+						type: 'si'
+					},
+					celsius: {
+						symbol: 'C',
+						type: 'si',
+						offset: 273.15
+					},
+					fahrenheit: {
+						symbol: 'F',
+						type: 'customary',
+						multiplier: 0.5555555555555556,
+						offset: 255.37222222
+					},
+					rankine: {
+						symbol: 'R',
+						otherSymbols: ['Ra'],
+						type: 'customary',
+						multiplier: 1.8,
+						notes: 'Check values'
+					},
+					romer: {
+						symbol: 'Rø',
+						otherSymbols: ['R'],
+						type: 'customary',
+						multiplier: 0.525,
+						offset: 135.90375,
+						notes: 'Technically Rømer (or Roemer). Check values'
+					},
+					newton: {
+						symbol: 'N',
+						type: 'customary',
+						multiplier: 0.33,
+						offset: 90.13949999999998,
+						notes: 'May have rounding error. Check values'
+					},
+					delisle: {
+						symbol: 'D',
+						type: 'customary',
+						multiplier: -1.5,
+						offset: -559.7249999999999,
+						notes: 'May have rounding error. Check values'
+					},
+					reaumur: {
+						symbol: 'Ré',
+						otherSymbols: ['Re', 'R'],
+						type: 'customary',
+						multiplier: -1.5,
+						offset: -559.7249999999999,
+						notes: 'Technically Réaumur. Check values'
+					}
+				}
+			},
+			amountOfSubstance: {
+				symbol: 'N',
+				baseUnit: 'mole',
+				units: {}
+			},
+			luminousIntensity: {
+				symbol: 'J',
+				baseUnit: 'candela',
+				units: {}
+			},
+			volume: {
+				symbol: 'V',
+				baseUnit: 'litre',
+				derived: 'length*length*length',
+				units: {}
+			},
+			area: {
+				symbol: 'A',
+				baseUnit: 'metreSquared',
+				derived: 'length*length',
+				units: {}
+			},
+			pressure: {
+				symbol: 'P',
+				baseUnit: 'pascal',
+				derived: 'mass/length/time/time',
+				units: {}
+			},
+			frequency: {
+				symbol: 'f',
+				baseUnit: 'hertz',
+				derived: '1/time',
+				units: {}
+			},
+			force: {
+				symbol: 'F',
+				otherNames: ['weight'],
+				baseUnit: 'newton',
+				derived: 'mass*length/time/time',
+				units: {}
+			},
+			speed: {
+				symbol: 'v',
+				baseUnit: 'metresPerSecond',
+				derived: 'length/time',
+				units: {}
+			},
+			acceleration: {
+				symbol: 'a',
+				baseUnit: 'metresPerSecondSquared',
+				derived: 'length/time/time',
+				units: {}
+			},
+			energy: {
+				symbol: 'E',
+				otherNames: ['work', 'heat'],
+				baseUnit: 'joule',
+				derived: 'mass*length*length/time/time',
+				units: {}
+			},
+			power: {
+				symbol: 'P',
+				baseUnit: 'watt',
+				derived: 'mass*length*length/time/time/time',
+				units: {}
+			},
+			electricCharge: {
+				symbol: 'Q',
+				otherNames: ['charge'],
+				baseUnit: 'coulomb',
+				derived: 'electricCurrent/time',
+				units: {}
+			},
+			electricPotential: {
+				symbol: 'Φ',
+				otherNames: ['voltage', 'electricFieldPotential', 'electrostaticPotential'],
+				baseUnit: 'volt',
+				derived: 'mass*length*length/electricCurrent/time/time/time',
+				units: {}
+			},
+			electricResistance: {
+				symbol: 'R',
+				otherNames: ['resistance'],
+				baseUnit: 'ohm',
+				derived: 'mass*length*length/time/time/time/electricCurrent/electricCurrent',
+				units: {}
+			},
+			capacitance: {
+				symbol: 'C',
+				baseUnit: 'farad',
+				derived: 'time*time*time*time*electricCurrent*electricCurrent/length/length/mass',
+				units: {}
+			},
+			information: {
+				symbol: 'i',
+				otherNames: ['data'],
+				baseUnit: 'bit',
+				units: {
+					bit: {
+						symbol: 'b',
+						type: 'binary'
+					},
+					byte: {
+						symbol: 'B',
+						type: 'binary',
+						multiplier: 8
+					}
+				}
+			}
 		},
-		length: { // radius, wavelength
-			symbol: 'L',
-			baseUnit: 'metre',
-			units: [
-				{ name: 'metre', symbol: 'm', type: 'si' }
-				// More here...
-			]
-		},
-		mass: {
-			symbol: 'M',
-			baseUnit: 'kilogram',
-			units: []
-		},
-		electricCurrent: {
-			symbol: 'I',
-			baseUnit: 'ampere',
-			units: []
-		},
-		temperature: {
-			symbol: 'Θ',
-			baseUnit: 'kelvin',
-			units: [
-				{ name: 'kelvin', symbol: 'K', type: 'si' },
-				{ name: 'celsius', symbol: 'C', type: 'si', offset: 273.15 },
-				{ name: 'fahrenheit', symbol: 'F', type: 'customary', multiplier: 0.5555555555555556, offset: 255.37222222 },
-				// Check values
-				{ name: 'rankine', symbol: 'R', otherSymbols: ['Ra'], type: 'customary', multiplier: 1.8 },
-				{ name: 'romer', symbol: 'Rø', otherSymbols: ['R'], type: 'customary', multiplier: 0.525, offset: 135.90375 }, // Technically Rømer (or Roemer)
-				{ name: 'newton', symbol: 'N', type: 'customary', multiplier: 0.33, offset: 90.13949999999998 }, // May have rounding error
-				{ name: 'delisle', symbol: 'D', type: 'customary', multiplier: -1.5, offset: -559.7249999999999 }, // May have rounding error
-				{ name: 'reaumur', symbol: 'Ré', otherSymbols: ['Re', 'R'], type: 'customary', multiplier: -1.5, offset: -559.7249999999999 } // Technically Réaumur
-			]
-		},
-		amountOfSubstance: {
-			symbol: 'N',
-			baseUnit: 'mole',
-			units: []
-		},
-		luminousIntensity: {
-			symbol: 'J',
-			baseUnit: 'candela',
-			units: []
-		},
-		volume: {
-			baseUnit: 'litre',
-			derived: 'length*length*length',
-			units: []
-		},
-		area: {
-			baseUnit: 'meterSquared',
-			derived: 'length*length',
-			units: []
-		},
-		pressure: {
-			baseUnit: 'pascal',
-			derived: 'mass/length/time/time',
-			units: []
-		},
-		frequency: {
-			baseUnit: 'hertz',
-			derived: '1/time',
-			units: []
-		},
-		force: {
-			symbol: 'F',
-			baseUnit: 'Newton',
-			derived: 'mass*length/time/time',
-			units: []
-		},
-		speed: {
-			symbol: 'v',
-			baseUnit: 'metersPerSecond',
-			derived: 'length/time',
-			units: []
-		},
-		acceleration: {
-			symbol: 'a',
-			baseUnit: 'metersPerSecondSquared',
-			derived: 'length/time/time',
-			units: []
-		},
-		energy: { // aka work... kinetic energy, heat
-			symbol: 'E',
-			baseUnit: 'joule',
-			derived: 'mass*length*length/time/time',
-			units: []
-		},
-		power: {
-			symbol: 'P',
-			baseUnit: 'watt',
-			derived: 'mass*length*length/time/time/time',
-			units: []
-		},
-		electricCharge: {
-			baseUnit: 'coulomb',
-			derived: 'electricCurrent/time',
-			units: []
-		},
-		electricPotential: { // aka voltage
-			symbol: 'V',
-			baseUnit: 'volt',
-			derived: 'mass*length*length/electricCurrent/time/time/time',
-			units: []
-		},
-		electricResistance: {
-			baseUnit: 'ohm',
-			derived: 'mass*length*length/time/time/time/electricCurrent/electricCurrent',
-			units: []
-		},
-		capacitance: {
-			baseUnit: 'farad',
-			derived: 'time*time*time*time*electricCurrent*electricCurrent/length/length/mass',
-			units: []
-		},
-		information: {
-			baseUnit: 'bit',
-			units: [
-				{ name: 'bit', symbol: 'b', type: 'binary' },
-				{ name: 'byte', symbol: 'B', type: 'binary', multiplier: 8 },
-			]
-		}
+		siPrefixes: [],
+		siBinaryPrefixes: []
 	};
-	measurement.add({ systems: MeasurementSystems });
+	measurement.add(MeasurementSystems || {});
 
 	// TODO: Do we need this? Can unit just be a dumb object?
 	Unit = (function () {

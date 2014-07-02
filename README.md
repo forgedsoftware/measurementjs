@@ -5,6 +5,58 @@ A measurement library for handling, converting, and manipulating quantities.
 
 ## [Documentation](http://measurementjs.com/)
 
+### Node Installation
+
+In order to install `measurement` in your project, navigate to your projects directory and install with:
+
+````
+npm install measurement
+````
+You can include `measurement` within a module in a standard way:
+````javascript
+var m = require('measurement');
+````
+### Web Installation - Common JS
+Coming Soon!
+### Web Installation - Require
+Coming Soon!
+### Basic Usage
+You can use `measurement` to perform basic math:
+````javascript
+m(4).add(5).value; // 9
+m(2).add(m(12)).value; // 14
+
+m(2.7).subtract(1.2).value; // 1.5
+m(16).subtract(m(2)).value; // 14
+
+m(4).multiply(3).value; // 12
+m(1.6).divide(m(4)).value; // 0.4
+````
+You can use `measurement` to perform unit conversions:
+````javascript
+m(2, 'minute').convert('second').value; // 120
+m(12, 'metre').convert('foot').value; // 39.3701
+````
+You can perform math between quantities with different units:
+````javascript
+m(30, 'minute').add(m(2, 'hour')).value; // 150 [in minutes]
+````
+You can chain operations:
+````javascript
+m(10, 'minute').multiply(m(2)).add(4).minus(m(30, 'second')).value; // 23.5
+````
+### Units & Systems
+Coming Soon!
+
+### Quantities & Dimensions
+Coming Soon!
+
+### Uncertainity & Frequency Distribution
+Coming Soon!
+
+### Config Options
+Coming Soon!
+
 ## Changelog
 
 ### 0.0.1

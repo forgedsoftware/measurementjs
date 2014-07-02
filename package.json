@@ -29,7 +29,6 @@
         "gulp-rename": "latest",
         "gulp-mocha": "latest",
         "gulp-bump": "latest",
-        "gulp-concat": "latest",
         "gulp-util": "latest",
         "event-stream": "latest",
         "js-beautify": "latest",

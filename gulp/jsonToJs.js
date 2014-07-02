@@ -56,7 +56,7 @@ function gulpJsonToJs (config) {
 		} else if (isFunction(obj)) {
 			text.push(obj.toString());
 		} else if (isString(obj)) {
-			text.push('\'' + obj + '\'');
+			text.push('\'' + obj.replace('\'', '\\\'').replace('"', '\\"') + '\'');
 		} else {
 			text.push(JSON.stringify(obj));
 		}

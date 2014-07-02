@@ -6,13 +6,12 @@ var gulp = require('gulp'),
 	uglify = require('gulp-uglify'),
 	rename = require('gulp-rename'),
 	mocha = require('gulp-mocha'),
-	concat = require('gulp-concat'),
+	bump = require('gulp-bump'),
+	Stream = require('stream'),
 	jsonToJs = require('./gulp/jsonToJs'),
-	replaceSystems = require('./gulp/replaceSystems'),
-	fs = require('fs'),
-	path = require('path'),
-	es = require('event-stream'),
-	bump = require('gulp-bump');
+	replaceSystems = require('./gulp/replaceSystems');
+
+var raw_destination = './raw_systems';
 
 // Bump Version
 gulp.task('bump', function () {
@@ -34,39 +33,66 @@ gulp.task('test', function() {
 		.pipe(mocha({ ui: 'tdd', reporter: 'nyan' }));
 });
 
-// JSON to JS Systems
-gulp.task('systems', function() {
-	return gulp.src('./common/systems/*.json')
+// Create and Build Systems
+gulp.task('systems', ['full_systems', 'default_systems', 'minimal_systems', 'stand_alone_systems']);
+
+function processSystem(name, unitFilter, systemFilter) {
+	return gulp.src('./common/systems.json')
+		.pipe(filterSystems(systemFilter || function () { return true; }))
+		.pipe(filterUnits(unitFilter || function () { return true; }))
+		.pipe(rename(name))
+		.pipe(gulp.dest(raw_destination))
+		.pipe(jsonToJs({ standAlone: false }))
+		.pipe(replaceSystems('./measurement.js'))
+		.pipe(rename('./measurement_' + name))
+		.pipe(rename({ extname: '.js' }))
+		.pipe(gulp.dest('./built/'))
+		.pipe(rename({ suffix: '.min' }))
+		.pipe(uglify())
+		.pipe(gulp.dest('min/'));
+}
+
+gulp.task('full_systems', function () {
+	return processSystem('full.json');
+});
+
+gulp.task('default_systems', function () {
+	return processSystem('default.json',
+		function (unit) {
+			return !unit.rare && !(unit.systems && (unit.systems.indexOf('historical') > -1));
+		});
+});
+
+gulp.task('minimal_systems', function () {
+	return processSystem('minimal.json',
+		function (unit) {
+			return unit.systems &&
+				((unit.systems.indexOf('usCustomary') > -1) || (unit.systems.indexOf('si') > -1) || (unit.systems.indexOf('imperial') > -1)) &&
+				!unit.rare &&
+				unit.systems.indexOf('historical') == -1;
+		},
+		function (system, systemName) {
+			return ['length', 'area', 'volume', 'speed', 'acceleration',
+				'pressure', 'mass', 'time', 'temperature',
+				'energy', 'density', 'information'].indexOf(systemName) > -1;
+		});
+});
+
+// JSON to stand alone JS Systems
+gulp.task('stand_alone_systems', function() {
+	return gulp.src(raw_destination + '/*.json')
 		.pipe(jsonToJs({ standAlone: true }))
 		.pipe(rename({ extname: '.js' }))
 		.pipe(gulp.dest('./systems/'));
 });
 
-// Concatinate Files & Minify
-gulp.task('concat', function() {
-	var files = getFiles('./common/systems/');
-
-	var tasks = files.map(function (file) {
-		return gulp.src('./common/systems/' + file)
-			.pipe(jsonToJs({ standAlone: false }))
-			.pipe(replaceSystems('./measurement.js'))
-			.pipe(rename('./measurement_' + file))
-			.pipe(rename({ extname: '.js' }))
-			.pipe(gulp.dest('./built/'))
-			.pipe(rename({ suffix: '.min' }))
-			.pipe(uglify())
-			.pipe(gulp.dest('min/'));
-	});
-	return es.concat.apply(null, tasks);
-});
-
 // Watch Files For Changes
 gulp.task('watch', function() {
-    gulp.watch('**/*.js', ['lint', 'test', 'concat']);
+    gulp.watch('**/*.js', ['lint', 'test']);
 });
 
 // General Tasks
-gulp.task('build', ['systems', 'lint', 'test', 'concat']);
+gulp.task('build', ['systems', 'lint', 'test']);
 gulp.task('release', ['build', 'bump']);
 
 // Default Task
@@ -74,8 +100,41 @@ gulp.task('default', ['build', 'watch']);
 
 // Helper Functions
 
-function getFiles(dir){
-	return fs.readdirSync(dir).filter(function (file) {
-		return fs.statSync(path.join(dir, file)).isFile();
+function filterUnits(filterFunc) {
+	return doGulpFilter(function (json, removeFunc) {
+		for (var propertyName in json.systems) {
+			for (var unitName in json.systems[propertyName].units) {
+				if (!filterFunc(json.systems[propertyName].units[unitName], unitName)) {
+					delete json.systems[propertyName].units[unitName];
+				}
+			}
+		}
 	});
+}
+
+function filterSystems (filterFunc) {
+	return doGulpFilter(function (json, removeFunc) {
+		for (var propertyName in json.systems) {
+			if (!filterFunc(json.systems[propertyName], propertyName)) {
+				delete json.systems[propertyName];
+			}
+		}
+	});
+}
+
+function doGulpFilter (forEach) {
+	var stream = new Stream.Transform({objectMode: true});
+
+	stream._transform = function (file, encoding, callback) {
+		try {
+			var json = JSON.parse(file.contents.toString(encoding));
+			forEach(json);
+			file.contents = new Buffer(JSON.stringify(json, null, '\t'));
+		} catch (err) {
+			console.log(err);
+		}
+		callback(null, file);
+	};
+
+	return stream;
 }

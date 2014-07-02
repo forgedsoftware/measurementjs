@@ -8,8 +8,7 @@ var gulp = require('gulp'),
 	mocha = require('gulp-mocha'),
 	bump = require('gulp-bump'),
 	Stream = require('stream'),
-	jsonToJs = require('./gulp/jsonToJs'),
-	replaceSystems = require('./gulp/replaceSystems');
+	gulpExt = require('./gulp/gulpExtensions');
 
 var raw_destination = './raw_systems';
 
@@ -38,12 +37,12 @@ gulp.task('systems', ['full_systems', 'default_systems', 'minimal_systems', 'sta
 
 function processSystem(name, unitFilter, systemFilter) {
 	return gulp.src('./common/systems.json')
-		.pipe(filterSystems(systemFilter || function () { return true; }))
-		.pipe(filterUnits(unitFilter || function () { return true; }))
+		.pipe(gulpExt.filterSystems(systemFilter || function () { return true; }))
+		.pipe(gulpExt.filterUnits(unitFilter || function () { return true; }))
 		.pipe(rename(name))
 		.pipe(gulp.dest(raw_destination))
-		.pipe(jsonToJs({ standAlone: false }))
-		.pipe(replaceSystems('./measurement.js'))
+		.pipe(gulpExt.jsonToJs({ standAlone: false }))
+		.pipe(gulpExt.insertSystems('./measurement.js'))
 		.pipe(rename('./measurement_' + name))
 		.pipe(rename({ extname: '.js' }))
 		.pipe(gulp.dest('./built/'))
@@ -81,7 +80,7 @@ gulp.task('minimal_systems', function () {
 // JSON to stand alone JS Systems
 gulp.task('stand_alone_systems', function() {
 	return gulp.src(raw_destination + '/*.json')
-		.pipe(jsonToJs({ standAlone: true }))
+		.pipe(gulpExt.jsonToJs({ standAlone: true }))
 		.pipe(rename({ extname: '.js' }))
 		.pipe(gulp.dest('./systems/'));
 });
@@ -101,7 +100,7 @@ gulp.task('default', ['build', 'watch']);
 // Helper Functions
 
 function filterUnits(filterFunc) {
-	return doGulpFilter(function (json, removeFunc) {
+	return doFuncToJsObject(function (json) {
 		for (var propertyName in json.systems) {
 			for (var unitName in json.systems[propertyName].units) {
 				if (!filterFunc(json.systems[propertyName].units[unitName], unitName)) {
@@ -113,7 +112,7 @@ function filterUnits(filterFunc) {
 }
 
 function filterSystems (filterFunc) {
-	return doGulpFilter(function (json, removeFunc) {
+	return doFuncToJsObject(function (json) {
 		for (var propertyName in json.systems) {
 			if (!filterFunc(json.systems[propertyName], propertyName)) {
 				delete json.systems[propertyName];
@@ -122,13 +121,13 @@ function filterSystems (filterFunc) {
 	});
 }
 
-function doGulpFilter (forEach) {
+function doFuncToJsObject (modifyObjFunc) {
 	var stream = new Stream.Transform({objectMode: true});
 
 	stream._transform = function (file, encoding, callback) {
 		try {
 			var json = JSON.parse(file.contents.toString(encoding));
-			forEach(json);
+			modifyObjFunc(json);
 			file.contents = new Buffer(JSON.stringify(json, null, '\t'));
 		} catch (err) {
 			console.log(err);

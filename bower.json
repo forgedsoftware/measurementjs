@@ -6,8 +6,10 @@
         "**/.*",
         "node_modules",
         "test",
+        "gulp",
+        "raw_systems",
+        "common",
         "gulpfile.js",
-        "jsonToJs.js",
         "package.json"
     ]
 }

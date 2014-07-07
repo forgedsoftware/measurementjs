@@ -1,3 +1,5 @@
+// This file is generated from ./measurement.js and systems.json
+
 /**
  *
  *
@@ -116,6 +118,9 @@
 				result += supers[numberStr[i]];
 			}
 			return result;
+		},
+		splice: function(str, index, insertedStr) {
+			return str.slice(0, index) + insertedStr + str.slice(index);
 		}
 	};
 
@@ -822,12 +827,6 @@
 		};
 
 		QuantityImpl.prototype.format = function (config) {
-
-			// TODO - move to helper funcs
-			function splice(str, index, insertedStr) {
-				return str.slice(0, index) + insertedStr + str.slice(index);
-			}
-
 			// TODO - get default format config object...
 			config = config || {};
 			if (typeof config.sort === 'undefined') { // default
@@ -851,7 +850,7 @@
 			valueStr = valueStr.replace('.', config.decimal || '.');
 			if (config.separator) {
 				while (separatorPos > 0) {
-					valueStr = splice(valueStr, separatorPos, config.separator);
+					valueStr = helpers.splice(valueStr, separatorPos, config.separator);
 					separatorPos -= (config.separatorCount || 3);
 				}
 			}

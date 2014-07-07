@@ -16,6 +16,9 @@ function insertSystems (baseFileName) {
 		measurementContents = fs.readFileSync(baseFileName).toString(encoding);
 		embeddedContents = file.contents.toString(encoding);
 
+		measurementContents = '// This file is generated from ' + baseFileName +
+			' and ' + file.relative + '\n\n' + measurementContents;
+
 		return measurementContents.replace('/* EMBED_SYSTEMS */', function () {
 			return embeddedContents.replace(/\n/g, function () {
 				return '\n\t';
@@ -30,22 +33,7 @@ function jsonToJs (config) {
 	config = config || {};
 
 	return doFuncFromJson(function (json, file) {
-		if (config.standAlone) {
-			json = '// This file is generated from ./common/systems/' + file.relative + ' \n' +
-				'(function (factory) {\n' +
-					'if (typeof define === \'function\' && define.amd) {\n' +
-						'define([\'measurement\'], factory); // AMD\n' +
-					'} else if (typeof exports === \'object\') {\n' +
-						'module.exports = factory(require(\'../measurement\')); // Node\n' +
-					'} else {\n' +
-						'factory(window.measurement); // Browser global\n' +
-					'}\n' +
-				'}(function (measurement) {\n' +
-					'return measurement.add(' + convertToText(json) + ');\n' +
-				'}));\n';
-		} else {
-			json = 'MeasurementSystems = ' + convertToText(json) + ';\n';
-		}
+		json = 'MeasurementSystems = ' + convertToText(json) + ';\n';
 		json = jsbeautify(json, {
 			indent_with_tabs: true,
 			brace_style: 'collapse'

@@ -36,7 +36,7 @@ function processSystem(name, unitFilter, systemFilter) {
 	return gulp.src('./common/systems.json')
 		.pipe(gulpExt.filterSystems(systemFilter || function () { return true; }))
 		.pipe(gulpExt.filterUnits(unitFilter || function () { return true; }))
-		.pipe(gulpExt.jsonToJs({ standAlone: false }))
+		.pipe(gulpExt.jsonToJs())
 		.pipe(gulpExt.insertSystems('./measurement.js'))
 		.pipe(rename('./measurement_' + name))
 		.pipe(rename({ extname: '.js' }))

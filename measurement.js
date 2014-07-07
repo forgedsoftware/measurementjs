@@ -1,6 +1,9 @@
 /**
- *
- *
+ * measurement.js
+ * Producer: Forged Software
+ * Contributors: Matthew Harward
+ * Website: www.measurementjs.com
+ * License: MIT
  */
 
 (function () {

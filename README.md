@@ -5,8 +5,9 @@ A measurement library for handling, converting, and manipulating quantities.
 
 ## [Documentation](http://measurementjs.com/)
 
-### Node Installation
+### Getting Started
 
+#### Node
 In order to install `measurement` in your project, navigate to your projects directory and install with:
 
 ````
@@ -15,12 +16,39 @@ npm install measurement
 You can include `measurement` within a module in a standard way:
 ````javascript
 var m = require('measurement');
+m(42, 'metre').format();
 ````
-### Web Installation - Common JS
+
+#### Browser
+````html
+<script src="measurement.js"></script>
+<script>
+	var m = window.measurement;
+	m(42, 'metre').format();
+</script>
+````
+
+#### Bower
+````
+bower install --save measurement
+````
+
+#### Require.js
+````javascript
+require.config({
+    paths: {
+        "measurement": "path/to/measurement",
+    }
+});
+define(["measurement"], function (m) {
+    m(42, 'metre').format();
+});
+````
+
+#### NuGet
 Coming Soon!
-### Web Installation - Require
-Coming Soon!
-### Basic Usage
+
+#### Basic Usage
 You can use `measurement` to perform basic math:
 ````javascript
 m(4).add(5).value; // 9
@@ -45,10 +73,14 @@ You can chain operations:
 ````javascript
 m(10, 'minute').multiply(m(2)).add(4).minus(m(30, 'second')).value; // 23.5
 ````
+
 ### Units & Systems
 Coming Soon!
 
 ### Quantities & Dimensions
+Coming Soon!
+
+### Format
 Coming Soon!
 
 ### Uncertainity & Frequency Distribution

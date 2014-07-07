@@ -557,8 +557,7 @@
 			return areAllBase;
 		};
 
-		// TODO: scalar is the wrong terminology!!!!
-		QuantityImpl.prototype.isScalar = function () {
+		QuantityImpl.prototype.isDimensionless = function () {
 			return (this.dimensions.length === 0);
 		};
 
@@ -566,7 +565,7 @@
 			if (!isQuantity(quantity)) {
 				throw new Error('Cannot check the commensurability of something that is not a Quantity');
 			}
-			// Scalars
+			// Dimensionless
 			if (this.dimensions.length === 0 && quantity.dimensions.length === 0) {
 				return true;
 			}
@@ -659,7 +658,7 @@
 		// http://en.wikipedia.org/wiki/Dimensional_analysis
 
 		QuantityImpl.prototype.multiply = function (value) {
-			if (helpers.isNumber(value)) { // Assume scalar
+			if (helpers.isNumber(value)) { // Assume dimensionless
 				return new Quantity(this.value * value, this.systemName, this.dimensions);
 			}
 			if (!isQuantity(value)) {
@@ -687,7 +686,7 @@
 		};
 
 		QuantityImpl.prototype.divide = function (value) {
-			if (helpers.isNumber(value)) { // Assume scalar
+			if (helpers.isNumber(value)) { // Assume dimensionless
 				return new Quantity(this.value / value, this.systemName, this.dimensions);
 			}
 			if (!isQuantity(value)) {
@@ -769,12 +768,12 @@
 		}
 
 		QuantityImpl.prototype.atan2 = function (y) {
-			// Assume y is a number and a scalar
+			// Assume y is a number and dimensionless
 			return new Quantity(Math.atan2(y, this.value), this.systemName, this.dimensions);
 		};
 
 		QuantityImpl.prototype.pow = function (y) {
-			// Assume y is a number and a scalar
+			// Assume y is a number and dimensionless
 			return new Quantity(Math.pow(this.value, y), this.systemName, this.dimensions);
 		};
 

@@ -7,10 +7,7 @@ var gulp = require('gulp'),
 	rename = require('gulp-rename'),
 	mocha = require('gulp-mocha'),
 	bump = require('gulp-bump'),
-	Stream = require('stream'),
 	gulpExt = require('./gulp/gulpExtensions');
-
-var raw_destination = './raw_systems';
 
 // Bump Version
 gulp.task('bump', function () {

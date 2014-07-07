@@ -33,14 +33,12 @@ gulp.task('test', function() {
 });
 
 // Create and Build Systems
-gulp.task('systems', ['full_systems', 'default_systems', 'minimal_systems', 'stand_alone_systems']);
+gulp.task('systems', ['full_systems', 'default_systems', 'minimal_systems']);
 
 function processSystem(name, unitFilter, systemFilter) {
 	return gulp.src('./common/systems.json')
 		.pipe(gulpExt.filterSystems(systemFilter || function () { return true; }))
 		.pipe(gulpExt.filterUnits(unitFilter || function () { return true; }))
-		.pipe(rename(name))
-		.pipe(gulp.dest(raw_destination))
 		.pipe(gulpExt.jsonToJs({ standAlone: false }))
 		.pipe(gulpExt.insertSystems('./measurement.js'))
 		.pipe(rename('./measurement_' + name))
@@ -75,14 +73,6 @@ gulp.task('minimal_systems', function () {
 				'pressure', 'mass', 'time', 'temperature',
 				'energy', 'density', 'information'].indexOf(systemName) > -1;
 		});
-});
-
-// JSON to stand alone JS Systems
-gulp.task('stand_alone_systems', function() {
-	return gulp.src(raw_destination + '/*.json')
-		.pipe(gulpExt.jsonToJs({ standAlone: true }))
-		.pipe(rename({ extname: '.js' }))
-		.pipe(gulp.dest('./systems/'));
 });
 
 // Watch Files For Changes

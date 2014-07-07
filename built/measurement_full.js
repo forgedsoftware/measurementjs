@@ -766,7 +766,7 @@
 		function createQuantity(self, mathFunction) {
 			return new Quantity(mathFunction(self.value), self.systemName, self.dimensions);
 		}
-
+		
 		QuantityImpl.prototype.atan2 = function (y) {
 			// Assume y is a number and dimensionless
 			return new Quantity(Math.atan2(y, this.value), this.systemName, this.dimensions);

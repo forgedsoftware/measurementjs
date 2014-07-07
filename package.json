@@ -18,7 +18,7 @@
     "contributors": [
         "Matthew Harward"
     ],
-    "main": "measurement.js",
+    "main": "./built/measurement_full.js",
     "dependencies": {},
     "devDependencies": {
         "mocha": "latest",

@@ -87,7 +87,7 @@ gulp.task('stand_alone_systems', function() {
 
 // Watch Files For Changes
 gulp.task('watch', function() {
-    gulp.watch('**/*.js', ['lint', 'test']);
+    gulp.watch(['measurement.js', 'test/*.js'], ['build']);
 });
 
 // General Tasks

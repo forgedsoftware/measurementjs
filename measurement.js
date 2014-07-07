@@ -103,6 +103,20 @@
 		isObject: function (value) {
 			return (typeof value === 'object') && !helpers.isArray(value);
 		},
+		toSuperScript: function (number) {
+			var numberStr, i,
+				result = '',
+				supers = {
+					0: '\u2070', 1: '\u00B9', 2: '\u00B2', 3: '\u00B3', 4: '\u2074',
+					5: '\u2075', 6: '\u2076', 7: '\u2077', 8: '\u2078', 9: '\u2079', '-': '\u207B',
+				};
+
+			numberStr = number.toString();
+			for (i = 0; i < numberStr.length; i++) {
+				result += supers[numberStr[i]];
+			}
+			return result;
+		}
 	};
 
 	// TOP LEVEL FUNCTIONS
@@ -417,13 +431,31 @@
 			return JSON.stringify(this.serialised());
 		};
 
-		DimensionImpl.prototype.toShortString = function () {
+		DimensionImpl.prototype.format = function (config) {
 			var unit, dimensionString;
 
 			unit = measurement.unit(this.systemName, this.unitName);
-			dimensionString = unit.symbol;
-			if (this.power !== 1) {
-				dimensionString += '^' + this.power; // TODO - nice way to do powers?
+			if (config.fullName) {
+				var dimParts = [];
+				if (this.power < 0) {
+					dimParts.push('per');
+				}
+				dimParts.push(this.unitName); // TODO - plurals??
+				var absPower = Math.abs(this.power);
+				if (absPower === 2) {
+					dimParts.push('squared');
+				} else if (absPower === 3) {
+					dimParts.push('cubed');
+				} else if (absPower > 3) {
+					dimParts.push('to the power of ' + absPower);
+				}
+				dimensionString = dimParts.join(' ');
+			} else {
+				dimensionString = unit.symbol;
+				if (config.showAllPowers || this.power !== 1) {
+					var powerStr = (config.ascii) ? '^' + this.power : helpers.toSuperScript(this.power);
+					dimensionString += powerStr;
+				}
 			}
 			return dimensionString;
 		};
@@ -760,6 +792,10 @@
 
 		// Helper functions
 
+		QuantityImpl.prototype.clone = function () {
+			return new Quantity(this.value, this.systemName, this.dimensions);
+		};
+
 		QuantityImpl.prototype.serialised = function () {
 			var jsonResult;
 
@@ -786,26 +822,78 @@
 			return JSON.stringify(this.serialised());
 		};
 
-		QuantityImpl.prototype.toShortFixed = function (lengthOfDecimal) {
-			var dimensionString = ' ';
-			helpers.forEach(this.dimensions, function (dimension) {
-				dimensionString += dimension.toShortString();
-			});
-			if (dimensionString.length <= 1) {
-				dimensionString = '';
-			}
-			return this.value.toFixed(lengthOfDecimal) + dimensionString;
-		};
+		QuantityImpl.prototype.format = function (config) {
 
-		QuantityImpl.prototype.toShortPrecision = function (numberOfSigFigs) {
-			var dimensionString = ' ';
-			helpers.forEach(this.dimensions, function (dimension) {
-				dimensionString += dimension.toShortString();
-			});
-			if (dimensionString.length <= 1) {
-				dimensionString = '';
+			// TODO - move to helper funcs
+			function splice(str, index, insertedStr) {
+				return str.slice(0, index) + insertedStr + str.slice(index);
 			}
-			return this.value.toPrecision(numberOfSigFigs) + dimensionString;
+
+			// TODO - get default format config object...
+			config = config || {};
+			if (typeof config.sort === 'undefined') { // default
+				config.sort = true;
+			}
+
+			var valueStr = '';
+			// Precision/Fixed
+			if (typeof config.fixed !== 'undefined') {
+				valueStr += this.value.toFixed(config.fixed);
+			} else {
+				valueStr += this.value.toPrecision(config.precision);
+			}
+
+			// Separator/Decimal
+			var numLength = valueStr.indexOf('.');
+			if (numLength === -1) {
+				numLength = valueStr.length;
+			}
+			var separatorPos = numLength - (config.separatorCount || 3);
+			valueStr = valueStr.replace('.', config.decimal || '.');
+			if (config.separator) {
+				while (separatorPos > 0) {
+					valueStr = splice(valueStr, separatorPos, config.separator);
+					separatorPos -= (config.separatorCount || 3);
+				}
+			}
+
+			// Exponents
+			if (config.expandExponent) {
+				var eIndex = valueStr.indexOf('e');
+				if (eIndex > -1) {
+					var exponent = Math.floor(Math.log(this.value)/Math.log(10));
+					valueStr = valueStr.slice(0, eIndex);
+					var exponentStr = (config.ascii) ? '^' + exponent : helpers.toSuperScript(exponent);
+					valueStr += ' x 10' + exponentStr;
+				}
+			}
+
+			// Dimensions
+			var dimensionStrings = [];
+			var clonedDimensions = this.clone().dimensions;
+			if (config.sort) {
+				clonedDimensions.sort(function (d1, d2) {
+					return d2.power - d1.power;
+				});
+			}
+			helpers.forEach(clonedDimensions, function (dimension) {
+				dimensionStrings.push(dimension.format(config));
+			});
+
+			var joiner = (config.fullName) ? ' ' : (config.unitSeparator || '');
+			var dimensionStr = dimensionStrings.join(joiner);
+
+			// Returning
+			if (config.onlyValue) {
+				return valueStr;
+			} else if (config.onlyDimensions) {
+				return dimensionStr;
+			} else {
+				if (dimensionStr.length > 0) {
+					valueStr += ' ';
+				}
+				return valueStr + dimensionStr;
+			}
 		};
 
 		return QuantityImpl;

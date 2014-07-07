@@ -48,21 +48,8 @@ test('conversion from unit to other unit', function () {
 	m(0, 'temperature', 'celsius').convert('fahrenheit').value.should.be.approximately(32, DELTA);
 });
 
-test('formatting of units when printed in short form', function () {
-
-	m(15, 'time', 'hour').toShortFixed().should.equal('15 h');
-
-	m(15.23425463237, 'temperature', 'celsius').toShortFixed().should.equal('15 C');
-	m(9.45456, 'temperature', 'fahrenheit').toShortPrecision().should.equal('9.45456 F');
-
-	m(456.1315454, 'temperature', 'fahrenheit').toShortFixed(2).should.equal('456.13 F');
-	m(1.6456113, 'temperature', 'fahrenheit').toShortFixed(3).should.equal('1.646 F');
-	m(1.6456113, 'temperature', 'fahrenheit').toShortPrecision(3).should.equal('1.65 F');
-});
-
 test('can create a new quantity from a json string', function () {
-
-	m('{ \"value\": 25, \"system\": \"time\", \"unit\":\"month\"}').toShortFixed().should.equal('25 month');
+	m('{ \"value\": 25, \"system\": \"time\", \"unit\":\"month\"}').format().should.equal('25 month');
 });
 
 test('json string used to create quantity equivalent to json string from serialising quantity', function () {

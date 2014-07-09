@@ -17,7 +17,6 @@
 		siBinaryPrefixes,
 		Dimension,
 		Quantity,
-		MeasurementSystems,
 		Unit,
 		helpers;
 
@@ -900,7 +899,16 @@
 		return QuantityImpl;
 	}());
 
-	MeasurementSystems = {
+	// TODO: Do we need this? Can unit just be a dumb object?
+	Unit = (function () {
+		function UnitImpl(config) {
+
+		}
+
+		return UnitImpl;
+	}());
+
+	var MeasurementSystems = {
 		systems: {
 			time: {
 				symbol: 'T',
@@ -1068,15 +1076,6 @@
 		siBinaryPrefixes: []
 	};
 	measurement.add(MeasurementSystems || {});
-
-	// TODO: Do we need this? Can unit just be a dumb object?
-	Unit = (function () {
-		function UnitImpl(config) {
-
-		}
-
-		return UnitImpl;
-	}());
 
 	/**
 	 * Initial setup

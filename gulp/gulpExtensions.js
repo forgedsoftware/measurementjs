@@ -33,7 +33,8 @@ function jsonToJs (config) {
 	config = config || {};
 
 	return doFuncFromJson(function (json, file) {
-		json = 'MeasurementSystems = ' + convertToText(json) + ';\n';
+		json = 'var MeasurementSystems = ' + convertToText(json) + ';\n'
+			+ 'measurement.add(MeasurementSystems || {});\n';
 		json = jsbeautify(json, {
 			indent_with_tabs: true,
 			brace_style: 'collapse'

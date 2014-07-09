@@ -15,7 +15,6 @@
 		siBinaryPrefixes,
 		Dimension,
 		Quantity,
-		MeasurementSystems,
 		Unit,
 		helpers;
 
@@ -898,9 +897,6 @@
 		return QuantityImpl;
 	}());
 
-	/* EMBED_SYSTEMS */
-	measurement.add(MeasurementSystems || {});
-
 	// TODO: Do we need this? Can unit just be a dumb object?
 	Unit = (function () {
 		function UnitImpl(config) {
@@ -909,6 +905,8 @@
 
 		return UnitImpl;
 	}());
+
+	/* EMBED_SYSTEMS */
 
 	/**
 	 * Initial setup

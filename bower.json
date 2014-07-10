@@ -1,5 +1,5 @@
 {
-    "name": "measurement",
+    "name": "measurejs",
     "version": "0.1.0-1",
     "main": "./built/measurement_full.js",
     "ignore": [

@@ -1,5 +1,5 @@
 {
-    "name": "measurement",
+    "name": "measurejs",
     "version": "0.1.0-1",
     "description": "A measurement package for handling and manipulating quantities.",
     "keywords": [

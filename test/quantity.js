@@ -85,3 +85,11 @@ test('simplify dimensions with power 0', function () {
 	q2.dimensions[0].should.have.property('power', 1);
 	q2.dimensions[0].should.have.property('unitName', 'metre');
 });
+
+// DISCOVERABILITY
+
+test('quantities should be able to be specified with an discoverable structure to avoid strings', function () {
+	var q1 = m(12, [ m.u.length.metre, m.u.time.second ]);
+	q1.should.have.property('value', 12);
+	q1.should.have.property('dimensions').with.lengthOf(2);
+});

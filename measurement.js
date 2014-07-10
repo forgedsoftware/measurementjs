@@ -153,6 +153,8 @@
 		return new Quantity(config.value, config.system, config.unit || config.dimensions);
 	};
 
+	measurement.u = {};
+
 	measurement.configure = function (config) {
 
 	};
@@ -197,7 +199,10 @@
 		var unitName,
 			units = {};
 
+		measurement.u[systemName] = {};
+
 		helpers.forEach(system.units, function (unit, unitName) {
+			measurement.u[systemName][unitName] = unitName;
 			units[unitName] = {
 				name: unitName,
 				displayName: unit.displayName || unitName || '',

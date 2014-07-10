@@ -720,7 +720,7 @@
 
 		QuantityImpl.prototype.add = function (value) {
 			if (helpers.isNumber(value)) { // Assume shorthand
-				return new Quantity(this.value + value, this.systemName, this.dimensions); // TODO check value is number
+				return new Quantity(this.value + value, this.systemName, this.dimensions); // TODO - Copy dimensions
 			}
 			if (!isQuantity(value)) {
 				throw new Error('Cannot add something that is not a number or a Quantity');
@@ -734,7 +734,7 @@
 
 		QuantityImpl.prototype.subtract = function (value) {
 			if (helpers.isNumber(value)) { // Assume shorthand
-				return new Quantity(this.value - value, this.systemName, this.dimensions); // TODO check value is number
+				return new Quantity(this.value - value, this.systemName, this.dimensions); // TODO - Copy dimensions
 			}
 			if (!isQuantity(value)) {
 				throw new Error('Cannot subtract something that is not a number or a Quantity');

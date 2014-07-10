@@ -1,6 +1,6 @@
 {
     "name": "measurement",
-    "version": "0.0.1-6",
+    "version": "0.1.0-1",
     "main": "./built/measurement_full.js",
     "ignore": [
         "**/.*",

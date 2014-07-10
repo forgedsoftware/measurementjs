@@ -11,11 +11,11 @@ A measurement library for handling, converting, and manipulating quantities.
 In order to install `measurement` in your project, navigate to your projects directory and install with:
 
 ````
-npm install measurement
+npm install measurejs
 ````
 You can include `measurement` within a module in a standard way:
 ````javascript
-var m = require('measurement');
+var m = require('measurejs');
 m(42, 'metre').format();
 ````
 

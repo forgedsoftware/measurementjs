@@ -548,7 +548,7 @@
 				}
 				processedDimensions.push(index);
 			});	
-			return new Quantity(this.value, this.systemName, newDimensions);
+			return new Quantity(computedValue, this.systemName, newDimensions);
 		};
 
 		// Unit Conversion
@@ -576,7 +576,7 @@
 				throw new Error('Cannot check the commensurability of something that is not a Quantity');
 			}
 			// Dimensionless
-			if (this.dimensions.length === 0 && quantity.dimensions.length === 0) {
+			if (this.isDimensionless() && quantity.IsDimensionless()) {
 				return true;
 			}
 

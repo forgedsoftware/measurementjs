@@ -39,7 +39,7 @@
     },
     "repository": {
         "type": "git",
-        "url": "http://github.com/mharward/measurementjs.git"
+        "url": "http://github.com/forgedsoftware/measurementjs.git"
     },
     "licenses": "MIT"
 }

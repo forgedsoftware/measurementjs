@@ -60,6 +60,11 @@ test('empty find unit should fail', function () {
 	findParameterFail(function () { m.findUnit('') });
 	findParameterFail(function () { m.findUnit({}) });
 	should.not.exist(m.findUnit('8'));
+
+	findParameterFail(function () { m.findUnits() });
+	findParameterFail(function () { m.findUnits('') });
+	findParameterFail(function () { m.findUnits({}) });
+	m.findUnits('8').length.should.equal(0);
 });
 
 test('empty find unit partial should fail', function () {
@@ -67,6 +72,11 @@ test('empty find unit partial should fail', function () {
 	findParameterFail(function () { m.findUnitPartial('') });
 	findParameterFail(function () { m.findUnitPartial({}) });
 	should.not.exist(m.findUnitPartial('8'));
+
+	findParameterFail(function () { m.findUnitsPartial() });
+	findParameterFail(function () { m.findUnitsPartial('') });
+	findParameterFail(function () { m.findUnitsPartial({}) });
+	m.findUnitsPartial('8').length.should.equal(0);
 });
 
 test('test unit filter function', function () {
@@ -102,6 +112,104 @@ test('test unit compare function', function () {
 	unit1.estimation = true;
 	m._private.compare(unit1, unit2, m._private.unitCalculatePoints).should.equal(0);
 });
+
+// Test Dimension Definition Find
+
+test('basic find dimension', function () {
+	should.not.exist(m.findDimension('xyz'));
+	should.not.exist(m.findDimension('len'));
+	m.findDimension('length').key.should.equal('length');
+	m.findDimension('Q').key.should.equal('electricCharge');
+	m.findDimension('Φb').key.should.equal('magneticFlux');
+});
+
+test('find dimension partial', function () {
+	should.not.exist(m.findDimensionPartial('xyz'));
+	m.findDimensionPartial('len').key.should.equal('length');
+	m.findDimensionPartial('flux').key.should.equal('luminousFlux');
+	m.findDimensionPartial('Q').key.should.equal('electricCharge');
+});
+
+test('find dimensions', function () {
+	m.findDimensionsPartial('xyz').length.should.equal(0);
+	m.findDimensionsPartial('flux').length.should.equal(2);
+	m.findDimensionsPartial('flux')[0].key.should.equal('luminousFlux');
+	m.findDimensions('Q').length.should.equal(2);
+	m.findDimensions('Q')[0].key.should.equal('electricCharge');
+});
+
+test('empty find dimension should fail', function () {
+	findParameterFail(function () { m.findDimension() });
+	findParameterFail(function () { m.findDimension('') });
+	findParameterFail(function () { m.findDimension({}) });
+	should.not.exist(m.findDimension('8'));
+
+	findParameterFail(function () { m.findDimensions() });
+	findParameterFail(function () { m.findDimensions('') });
+	findParameterFail(function () { m.findDimensions({}) });
+	m.findDimensions('8').length.should.equal(0);
+});
+
+test('empty find dimension partial should fail', function () {
+	findParameterFail(function () { m.findDimensionPartial() });
+	findParameterFail(function () { m.findDimensionPartial('') });
+	findParameterFail(function () { m.findDimensionPartial({}) });
+	should.not.exist(m.findDimensionPartial('8'));
+
+	findParameterFail(function () { m.findDimensionsPartial() });
+	findParameterFail(function () { m.findDimensionsPartial('') });
+	findParameterFail(function () { m.findDimensionsPartial({}) });
+	m.findDimensionsPartial('8').length.should.equal(0);
+});
+
+test('test dimension filter function', function () {
+	var dimension = {
+		key: 'test',
+		vector: false,
+	}
+	m._private.dimensionFilter(dimension).should.be.true;
+	dimension.vector = true;
+	m._private.dimensionFilter(dimension).should.be.false;
+	m.options.allowVectorDimensions = true;
+	m._private.dimensionFilter(dimension).should.be.true;
+	m.options.allowVectorDimensions = false;
+
+	var dim = m.findDimension('volume');
+	m._private.dimensionFilter(dim).should.be.true;
+	m.options.allowDerivedDimensions = false;
+	m._private.dimensionFilter(dim).should.be.false;
+	m.options.allowDerivedDimensions = true;
+	m._private.dimensionFilter(dim).should.be.true;
+	m.options.ignoredDimensions.push(dim);
+	m._private.dimensionFilter(dim).should.be.false;
+});
+
+test('test dimension compare function', function () {
+	var dim1 = m.findDimension('area').clone();
+	var dim2 = m.findDimension('area').clone();
+	m._private.compare(dim1, dim2, m._private.dimensionCalculatePoints).should.equal(0);
+	dim1.vector = true;
+	m._private.compare(dim1, dim2, m._private.dimensionCalculatePoints).should.equal(-1);
+	dim2.vector = true;
+	m._private.compare(dim1, dim2, m._private.dimensionCalculatePoints).should.equal(0);
+	dim2.dimensionless = true;
+	m._private.compare(dim1, dim2, m._private.dimensionCalculatePoints).should.equal(1);
+	dim1.dimensionless = true;
+	m._private.compare(dim1, dim2, m._private.dimensionCalculatePoints).should.equal(0);
+
+	m._private.compare(
+		m.findDimension('time'),
+		m.findDimension('length'),
+		m._private.dimensionCalculatePoints).should.equal(-8); // Same points, alphabetical
+});
+
+// Test Measurement System Find
+
+// TODO
+
+// Test Prefix Find
+
+// TODO
 
 // Helper Functions
 

@@ -56,27 +56,11 @@ test('find base unit', function () {
 });
 
 test('empty find unit should fail', function () {
-	findParameterFail(function () { m.findUnit() });
-	findParameterFail(function () { m.findUnit('') });
-	findParameterFail(function () { m.findUnit({}) });
-	should.not.exist(m.findUnit('8'));
-
-	findParameterFail(function () { m.findUnits() });
-	findParameterFail(function () { m.findUnits('') });
-	findParameterFail(function () { m.findUnits({}) });
-	m.findUnits('8').length.should.equal(0);
+	testFailingParameters(m.findUnit, m.findUnits);
 });
 
 test('empty find unit partial should fail', function () {
-	findParameterFail(function () { m.findUnitPartial() });
-	findParameterFail(function () { m.findUnitPartial('') });
-	findParameterFail(function () { m.findUnitPartial({}) });
-	should.not.exist(m.findUnitPartial('8'));
-
-	findParameterFail(function () { m.findUnitsPartial() });
-	findParameterFail(function () { m.findUnitsPartial('') });
-	findParameterFail(function () { m.findUnitsPartial({}) });
-	m.findUnitsPartial('8').length.should.equal(0);
+	testFailingParameters(m.findUnitPartial, m.findUnitsPartial);
 });
 
 test('test unit filter function', function () {
@@ -85,7 +69,7 @@ test('test unit filter function', function () {
 		rare: false,
 		estimation: false,
 		systems: [m.findSystem('metric')]
-	}
+	};
 	m._private.unitFilter(unit).should.be.true;
 	unit.rare = true;
 	m._private.unitFilter(unit).should.be.false;
@@ -139,34 +123,18 @@ test('find dimensions', function () {
 });
 
 test('empty find dimension should fail', function () {
-	findParameterFail(function () { m.findDimension() });
-	findParameterFail(function () { m.findDimension('') });
-	findParameterFail(function () { m.findDimension({}) });
-	should.not.exist(m.findDimension('8'));
-
-	findParameterFail(function () { m.findDimensions() });
-	findParameterFail(function () { m.findDimensions('') });
-	findParameterFail(function () { m.findDimensions({}) });
-	m.findDimensions('8').length.should.equal(0);
+	testFailingParameters(m.findDimension, m.findDimensions);
 });
 
 test('empty find dimension partial should fail', function () {
-	findParameterFail(function () { m.findDimensionPartial() });
-	findParameterFail(function () { m.findDimensionPartial('') });
-	findParameterFail(function () { m.findDimensionPartial({}) });
-	should.not.exist(m.findDimensionPartial('8'));
-
-	findParameterFail(function () { m.findDimensionsPartial() });
-	findParameterFail(function () { m.findDimensionsPartial('') });
-	findParameterFail(function () { m.findDimensionsPartial({}) });
-	m.findDimensionsPartial('8').length.should.equal(0);
+	testFailingParameters(m.findDimensionPartial, m.findDimensionsPartial);
 });
 
 test('test dimension filter function', function () {
 	var dimension = {
 		key: 'test',
 		vector: false,
-	}
+	};
 	m._private.dimensionFilter(dimension).should.be.true;
 	dimension.vector = true;
 	m._private.dimensionFilter(dimension).should.be.false;
@@ -205,13 +173,151 @@ test('test dimension compare function', function () {
 
 // Test Measurement System Find
 
-// TODO
+test('basic find measurement system', function () {
+	should.not.exist(m.findSystem('xyz'));
+	should.not.exist(m.findSystem('met'));
+	m.findSystem('metric').key.should.equal('metric');
+	m.findSystem('Planck Units').key.should.equal('planck');
+});
+
+test('find measurement system partial', function () {
+	should.not.exist(m.findSystemPartial('xyz'));
+	m.findSystemPartial('metric').key.should.equal('metric');
+	m.findSystemPartial('met').key.should.equal('metric');
+	m.findSystemPartial('hart').key.should.equal('hartree');
+});
+
+test('find measurement systems', function () {
+	m.findSystemsPartial('xyz').length.should.equal(0);
+	m.findSystemsPartial('unit').length.should.equal(27);
+	m.findSystemsPartial('metric').length.should.equal(6);
+	m.findSystemsPartial('metric')[0].key.should.equal('metric');
+});
+
+test('empty find measurement system should fail', function () {
+	testFailingParameters(m.findSystem, m.findSystems);
+});
+
+test('empty find measurement system partial should fail', function () {
+	testFailingParameters(m.findSystemPartial, m.findSystemsPartial);
+});
+
+test('test measurement system filter function', function () {
+	var system = m.findSystem('siCommon');
+	m._private.systemFilter(system).should.be.true;
+	m.options.ignoredSystemsForUnits.push(system);
+	m._private.systemFilter(system).should.be.false;
+	m._private.systemFilter(system.parent).should.be.false;
+	var australia = m.findSystem('australia');
+	m._private.systemFilter(australia).should.be.true;
+	m.options.allowedSystemsForUnits.push(australia);
+	m.options.allowedSystemsForUnits.push(system.parent);
+	m._private.systemFilter(system).should.be.false;
+	m._private.systemFilter(system.parent).should.be.true;
+	m._private.systemFilter(system.parent.parent).should.be.true;
+});
+
+test('test measurement system compare function', function () {
+	var sys1 = m.findSystem('metric').clone();
+	var sys2 = m.findSystem('metric').clone();
+	m._private.compare(sys1, sys2, m._private.systemCalculatePoints).should.equal(0);
+
+	m._private.compare(
+		m.findSystem('imperial'),
+		m.findSystem('englishUnits'),
+		m._private.systemCalculatePoints).should.equal(-4); // Same points, alphabetical
+});
 
 // Test Prefix Find
 
-// TODO
+test('basic find prefix', function () {
+	should.not.exist(m.findPrefix('xyz'));
+	should.not.exist(m.findPrefix('mic'));
+	m.findPrefix('kilo').key.should.equal('kilo');
+	m.findPrefix('M').key.should.equal('mega');
+	m.findPrefix('Ki').key.should.equal('kibi');
+});
+
+test('find prefix partial', function () {
+	should.not.exist(m.findPrefixPartial('xyz'));
+	m.findPrefixPartial('kil').key.should.equal('kilo');
+	m.findPrefixPartial('to').key.should.equal('atto');
+	m.findPrefixPartial('mi').key.should.equal('micro');
+});
+
+test('find prefixes', function () {
+	m.findPrefixesPartial('xyz').length.should.equal(0);
+	m.findPrefixesPartial('to').length.should.equal(4);
+	m.findPrefixesPartial('to')[0].key.should.equal('atto');
+	m.findPrefixesPartial('Mi')[0].key.should.equal('micro');
+	m.findPrefixesPartial('Mi', false)[0].key.should.equal('mebi');
+	m.findPrefixes('k').length.should.equal(1);
+});
+
+test('empty find prefix should fail', function () {
+	testFailingParameters(m.findPrefix, m.findPrefixes);
+});
+
+test('empty find prefix partial should fail', function () {
+	testFailingParameters(m.findPrefixPartial, m.findPrefixesPartial);
+});
+
+test('test prefix filter function', function () {
+	var prefix = {
+		key: 'test',
+		symbol: 't',
+		type: 'si',
+		rare: false
+	};
+	m._private.prefixFilter(prefix).should.be.true;
+	prefix.type = 'siBinary';
+	m._private.prefixFilter(prefix).should.be.true;
+	prefix.type = 'siUnofficial';
+	m._private.prefixFilter(prefix).should.be.false;
+	m.options.useUnofficalPrefixes = true;
+	m._private.prefixFilter(prefix).should.be.true;
+	prefix.rare = true;
+	m._private.prefixFilter(prefix).should.be.false;
+	m.options.useRarePrefixes = true;
+	m._private.prefixFilter(prefix).should.be.true;
+});
+
+test('test prefix compare function', function () {
+	var pre1 = m.findPrefix('kilo').clone();
+	var pre2 = m.findPrefix('kilo').clone();
+	m._private.compare(pre1, pre2, m._private.prefixCalculatePoints).should.equal(0);
+	pre2.rare = true;
+	m._private.compare(pre1, pre2, m._private.prefixCalculatePoints).should.equal(1);
+	pre1.rare = true;
+	m._private.compare(pre1, pre2, m._private.prefixCalculatePoints).should.equal(0);
+	pre1.type = 'siBinary';
+	m._private.compare(pre1, pre2, m._private.prefixCalculatePoints).should.equal(-1);
+	pre2.type = 'siBinary';
+	m._private.compare(pre1, pre2, m._private.prefixCalculatePoints).should.equal(0);
+	pre2.type = 'siUnofficial';
+	m._private.compare(pre1, pre2, m._private.prefixCalculatePoints).should.equal(1);
+	pre1.type = 'siUnofficial';
+	m._private.compare(pre1, pre2, m._private.prefixCalculatePoints).should.equal(0);
+
+	m._private.compare(
+		m.findPrefix('kilo'),
+		m.findPrefix('mega'),
+		m._private.prefixCalculatePoints).should.equal(2); // Same points, alphabetical
+});
 
 // Helper Functions
+
+function testFailingParameters(func, funcArr) {
+	findParameterFail(function () { func() });
+	findParameterFail(function () { func('') });
+	findParameterFail(function () { func({}) });
+	should.not.exist(func('8'));
+
+	findParameterFail(function () { funcArr() });
+	findParameterFail(function () { funcArr('') });
+	findParameterFail(function () { funcArr({}) });
+	funcArr('8').length.should.equal(0);
+}
 
 function findParameterFail(func) {
 	try {

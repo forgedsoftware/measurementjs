@@ -1,6 +1,8 @@
 /*jslint node: true */
 'use strict';
 
+/*
+
 var m = require('../built/measurement_full.js'),
 	should = require('should');
 
@@ -93,3 +95,5 @@ test('quantities should be able to be specified with an discoverable structure t
 	q1.should.have.property('value', 12);
 	q1.should.have.property('dimensions').with.lengthOf(2);
 });
+
+*/

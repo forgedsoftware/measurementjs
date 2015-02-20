@@ -18,7 +18,7 @@
     "contributors": [
         "Matthew Harward"
     ],
-    "main": "./built/measurement_full.js",
+    "main": "./lib/measurement.js",
     "dependencies": {},
     "devDependencies": {
         "mocha": "latest",
@@ -30,9 +30,10 @@
         "gulp-mocha": "latest",
         "gulp-bump": "latest",
         "gulp-util": "latest",
-        "event-stream": "latest",
-        "js-beautify": "latest",
-        "moment": "latest"
+        "gulp-sourcemaps": "latest",
+        "browserify": "latest",
+        "vinyl-source-stream": "latest",
+        "vinyl-buffer": "latest",
     },
     "engines": {
         "node": ">= 0.10"

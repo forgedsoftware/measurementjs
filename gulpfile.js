@@ -2,12 +2,15 @@
 'use strict';
 
 var gulp = require('gulp'),
+	browserify = require('browserify'),
+	source = require('vinyl-source-stream'),
+	buffer = require('vinyl-buffer'),
+	sourcemaps = require('gulp-sourcemaps'),
 	jshint = require('gulp-jshint'),
 	uglify = require('gulp-uglify'),
 	rename = require('gulp-rename'),
 	mocha = require('gulp-mocha'),
-	bump = require('gulp-bump'),
-	gulpExt = require('./gulp/gulpExtensions');
+	bump = require('gulp-bump');
 
 // Bump Version
 gulp.task('bump', function () {
@@ -29,56 +32,36 @@ gulp.task('test', function() {
 		.pipe(mocha({ ui: 'tdd', reporter: 'nyan' }));
 });
 
-// Create and Build Systems
-gulp.task('systems', ['full_systems', 'default_systems', 'minimal_systems']);
+// Browserify
+gulp.task('browserify', function() {
 
-function processSystem(name, unitFilter, systemFilter) {
-	return gulp.src('./common/systems.json')
-		.pipe(gulpExt.filterSystems(systemFilter || function () { return true; }))
-		.pipe(gulpExt.filterUnits(unitFilter || function () { return true; }))
-		.pipe(gulpExt.jsonToJs())
-		.pipe(gulpExt.insertSystems('./measurement.js'))
-		.pipe(rename('./measurement_' + name))
-		.pipe(rename({ extname: '.js' }))
-		.pipe(gulp.dest('./built/'))
-		.pipe(rename({ suffix: '.min' }))
-		.pipe(uglify())
-		.pipe(gulp.dest('min/'));
-}
+	var bundler = browserify({
+		entries: ['./lib/measurement.js']
+	});
 
-gulp.task('full_systems', function () {
-	return processSystem('full.json');
-});
+	var bundle = function() {
+		return bundler
+			.bundle()
+			.pipe(source('measurement.js'))
+			.pipe(buffer())
+			.pipe(gulp.dest('./web/'))
+			.pipe(rename({ suffix: '.min' }))
+			.pipe(sourcemaps.init({loadMaps: true}))
+			.pipe(uglify())
+			.pipe(sourcemaps.write('./'))
+			.pipe(gulp.dest('./web/'));
+	};
 
-gulp.task('default_systems', function () {
-	return processSystem('default.json',
-		function (unit) {
-			return !unit.rare && !(unit.systems && (unit.systems.indexOf('historical') > -1));
-		});
-});
-
-gulp.task('minimal_systems', function () {
-	return processSystem('minimal.json',
-		function (unit) {
-			return unit.systems &&
-				((unit.systems.indexOf('usCustomary') > -1) || (unit.systems.indexOf('si') > -1) || (unit.systems.indexOf('imperial') > -1)) &&
-				!unit.rare &&
-				unit.systems.indexOf('historical') == -1;
-		},
-		function (system, systemName) {
-			return ['length', 'area', 'volume', 'speed', 'acceleration',
-				'pressure', 'mass', 'time', 'temperature',
-				'energy', 'density', 'information'].indexOf(systemName) > -1;
-		});
+	return bundle();
 });
 
 // Watch Files For Changes
 gulp.task('watch', function() {
-    gulp.watch(['measurement.js', 'test/*.js'], ['build']);
+    gulp.watch(['lib/**/*.js', 'test/*.js'], ['build']);
 });
 
 // General Tasks
-gulp.task('build', ['systems', 'lint', 'test']);
+gulp.task('build', ['lint', 'test', 'browserify']);
 gulp.task('release', ['build', 'bump']);
 
 // Default Task

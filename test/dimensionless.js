@@ -1,6 +1,8 @@
 /*jslint node: true */
 'use strict';
 
+/*
+
 var m = require('../built/measurement_full.js'),
 	should = require('should');
 
@@ -90,3 +92,5 @@ test('isDimensionless method should only be true if a scalar', function () {
 	m(-4).isDimensionless().should.be.true;
 	m(10, 'metre').isDimensionless().should.be.false;
 });
+
+*/

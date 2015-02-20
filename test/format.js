@@ -1,6 +1,8 @@
 /*jslint node: true */
 'use strict';
 
+/*
+
 var m = require('../built/measurement_full.js'),
 	should = require('should');
 
@@ -89,3 +91,5 @@ test('option ascii should show an ascii representation of the formatted quantity
 	m(12.4, [{ unit: 'metre', power: -1 }, { unit: 'hour', power: 3}, { unit: 'kelvin', power: -2}]).format({ ascii: true }).should.equal('12.4 h^3m^-1K^-2');
 	m(21, ['hour', 'metre']).format({ showAllPowers: true, ascii: true }).should.equal('21 h^1m^1');
 });
+
+*/

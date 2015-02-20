@@ -1,6 +1,6 @@
 /*jslint node: true */
 'use strict';
-
+/*
 var m = require('../built/measurement_full.js'),
 	should = require('should');
 
@@ -42,3 +42,4 @@ test('simple add of a smaller unit in the same system should add correctly', fun
 	q1.dimensions[0].should.have.property('unitName', 'hour');
 	q1.dimensions[0].should.have.property('power', 1);
 });
+*/

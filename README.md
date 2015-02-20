@@ -3,7 +3,7 @@ Measurement.js
 
 A measurement library for handling, converting, and manipulating quantities.
 
-## [Documentation](http://measurementjs.com/)
+## Documentation
 
 ### Getting Started
 

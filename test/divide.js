@@ -1,6 +1,8 @@
 /*jslint node: true */
 'use strict';
 
+/*
+
 var m = require('../built/measurement_full.js'),
 	should = require('should');
 
@@ -33,3 +35,5 @@ test('multiply with different units with single simplification', function () {
 	q1.dimensions[0].should.have.property('power', 1);
 	q1.dimensions[0].should.have.property('unitName', 'metre');
 });
+
+*/

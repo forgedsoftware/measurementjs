@@ -1,7 +1,7 @@
 {
     "name": "measurejs",
     "version": "0.1.0-2",
-    "main": "./built/measurement_full.js",
+    "main": "./lib/measurement.js",
     "ignore": [
         "**/.*",
         "node_modules",

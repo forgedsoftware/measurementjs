@@ -33,7 +33,7 @@
         "gulp-sourcemaps": "latest",
         "browserify": "latest",
         "vinyl-source-stream": "latest",
-        "vinyl-buffer": "latest",
+        "vinyl-buffer": "latest"
     },
     "engines": {
         "node": ">= 0.10"

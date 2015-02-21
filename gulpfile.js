@@ -36,7 +36,7 @@ gulp.task('test', function() {
 gulp.task('browserify', function() {
 
 	var bundler = browserify({
-		entries: ['./lib/measurement.js']
+		entries: ['./lib/measurement_shim.js']
 	});
 
 	var bundle = function() {

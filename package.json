@@ -35,8 +35,20 @@
         "vinyl-source-stream": "latest",
         "vinyl-buffer": "latest"
     },
+    "testling": {
+        "harness": "mocha-tdd",
+        "files": "test/*.js",
+        "browsers": [
+            "ie/8..latest",
+            "chrome/latest",
+            "firefox/latest"
+        ]
+    },
     "engines": {
         "node": ">= 0.10"
+    },
+    "scripts": {
+        "test": "mocha -u tdd -R nyan"
     },
     "repository": {
         "type": "git",

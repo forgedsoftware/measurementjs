@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/forgedsoftware/measurementjs.svg?branch=master)](https://travis-ci.org/forgedsoftware/measurementjs)
+
 Measurement.js
 ==============
 

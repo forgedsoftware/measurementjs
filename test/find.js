@@ -169,7 +169,7 @@ test('test dimension compare function', function () {
 	m._private.compare(
 		m.findDimension('time'),
 		m.findDimension('length'),
-		m._private.dimensionCalculatePoints).should.equal(-8); // Same points, alphabetical
+		m._private.dimensionCalculatePoints).should.be.below(0); // Same points, alphabetical
 });
 
 // Test Measurement System Find
@@ -226,7 +226,7 @@ test('test measurement system compare function', function () {
 	m._private.compare(
 		m.findSystem('imperial'),
 		m.findSystem('englishUnits'),
-		m._private.systemCalculatePoints).should.equal(-4); // Same points, alphabetical
+		m._private.systemCalculatePoints).should.be.below(0); // Same points, alphabetical
 });
 
 // Test Prefix Find
@@ -303,7 +303,7 @@ test('test prefix compare function', function () {
 	m._private.compare(
 		m.findPrefix('kilo'),
 		m.findPrefix('mega'),
-		m._private.prefixCalculatePoints).should.equal(2); // Same points, alphabetical
+		m._private.prefixCalculatePoints).should.be.above(0); // Same points, alphabetical
 });
 
 // Helper Functions

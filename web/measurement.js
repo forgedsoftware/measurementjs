@@ -5132,6 +5132,12 @@ module.exports={
 var helpers = require('../lib/helpers.js'),
 	measurement = require('../lib/measurement.js');
 
+// TODO
+	// Add the following functions:
+	//  - toBaseDimensionDefinitions
+	//  - matchDimensions
+	// And populate findPrefix
+
 var Dimension = (function () {
 
 	var DEFAULT_POWER = 1;
@@ -5140,7 +5146,7 @@ var Dimension = (function () {
 	
 	function DimensionImpl(paramA, paramB, paramC, paramD) {
 		if (helpers.isString(paramA) && helpers.isString(paramB)) {
-			constructWithUnitNameAndSystemName(this, paramA, paramB, paramC, paramD);
+			constructWithUnitNameAndDimensionName(this, paramA, paramB, paramC, paramD);
 		} else if (helpers.isString(paramA)) {
 			constructWithUnitName(this, paramA, paramB, paramC)
 		} else if (paramA.class && paramA.class() == 'Unit') {
@@ -5158,7 +5164,7 @@ var Dimension = (function () {
 		dim.unit = unit;
 
 		// Power
-		if (!power) {
+		if (!power && power !== 0) {
 			power = DEFAULT_POWER;
 		}
 		dim.power = power;
@@ -5184,14 +5190,14 @@ var Dimension = (function () {
 		constructWithUnit(dim, unit, power, prefix);
 	}
 
-	function constructWithUnitNameAndSystemName(dim, unitName, systemName, power, prefix) {
-		var foundPrefix = measurement.findPrefix(systemName);
+	function constructWithUnitNameAndDimensionName(dim, unitName, dimName, power, prefix) {
+		var foundPrefix = measurement.findPrefix(dimName);
 		if (foundPrefix) {
 			// Allows d('metre', 'kilo'); or d('amp', 'milli', -1);
 			constructWithUnitName(dim, unitName, power, foundPrefix);
 		} else {
 			// Allows d('metre', 'length', 1, 'kilo')
-			var unit = measurement.findUnit(unitName, systemName);
+			var unit = measurement.findUnit(unitName, dimName);
 			constructWithUnit(dim, unit, power, prefix);
 		}
 	}
@@ -5202,61 +5208,64 @@ var Dimension = (function () {
 		return 'Dimension';
 	}
 
-	// TODO check all below this...
+	function isDimension (value) {
+		return (value.class && helpers.isFunction(value.class) && value.class() == 'Dimension');
+	}
 
 	// Conversion
 
-	DimensionImpl.prototype.unitIsBaseUnit = function () {
-		return (measurement.system(this.systemName).baseUnit === this.unitName);
-	};
-
 	// Returns dimension-value pair: { dimension: {}, value: 123 }
-	DimensionImpl.prototype.convert = function (value, unitName) {
+	DimensionImpl.prototype.convert = function (value, unit, prefix) {
 		var dimValuePair = this.convertToBase();
-		return dimValuePair.dimension.convertFromBase(dimValuePair.value, unitName);
+		return dimValuePair.dimension.convertFromBase(dimValuePair.value, unit, prefix);
 	};
 
 	// Returns dimension-value pair: { dimension: {}, value: 123 }
 	DimensionImpl.prototype.convertToBase = function (value) {
-		var unit, baseUnitName, baseUnit, newValue;
+		var baseUnit;
 
-		if (this.unitIsBaseUnit()) {
+		if (this.unit.isBaseUnit() && !this.prefix) {
 			return {
 				dimension: this.clone(),
 				value: value
 			};
 		}
-		unit = measurement.unit(this.systemName, this.unitName);
-		baseUnitName = measurement.system(this.systemName).baseUnit;
-		// Here to validate baseUnit exists
-		baseUnit = measurement.unit(this.systemName, baseUnitName);
-
+		baseUnit = this.unit.dimension.baseUnit;
+		if (!baseUnit) {
+			throw new Error('Base unit could not be found!');
+		}
 		return {
-			dimension: new Dimension(this.systemName, baseUnitName, this.power),
-			value: doConvert(value, this.power, unit, true)
+			value: doConvert(value, this.unit, this.prefix, this.power, true),
+			dimension: new Dimension(baseUnit, this.power)
 		};
 	};
 
 	// Returns dimension-value pair: { dimension: {}, value: 123 }
-	DimensionImpl.prototype.convertFromBase = function (value, unitName) {
-		var unit, newValue;
-
-		if (!this.unitIsBaseUnit()) {
-			throw new Error("The existing unit is not a base unit");
+	DimensionImpl.prototype.convertFromBase = function (value, unit, prefix) {
+		if (!unit) {
+			throw new Error('A unit to convert into must be provided');
 		}
-		unit = measurement.unit(this.systemName, unitName);
+		if (!this.unit.isBaseUnit()) {
+			throw new Error('Existing unit is not base unit');
+		}
+		if (this.prefix) {
+			throw new Error('A dimension as a base may not have a prefix');
+		}
 
 		return {
-			dimension: new Dimension(this.systemName, unitName, this.power),
-			value: doConvert(value, this.power, unit, false)
+			value: (unit.isBaseUnit()) ? value : doConvert(value, unit, prefix, this.power, false),
+			dimension: new Dimension(unit, this.power, prefix)
 		};
 	};
 
-	function doConvert(value, power, unit, toBase) {
+	function doConvert(value, unit, prefix, power, toBase) {
 		var pow, calculatedValue;
 
 		calculatedValue = value;
 		for (pow = 0; pow < Math.abs(power); pow++) {
+			if (prefix != null) {
+				calculatedValue = toBase ? prefix.remove(calculatedValue) : prefix.apply(calculatedValue);
+			}
 			if (toBase ? (power > 0) : (power < 0)) {
 				calculatedValue = (calculatedValue * unit.multiplier) + unit.offset; // TODO dimensionality with offsets may not work with compound dimensions.
 			} else {
@@ -5266,18 +5275,29 @@ var Dimension = (function () {
 		return calculatedValue;
 	}
 
+	// General Operations
+
+	DimensionImpl.prototype.isCommensurableMatch = function (dimension) {
+		if (!isDimension(dimension)) {
+			throw new Error('Provided parameter must be a Dimension');
+		}
+		return this.unit.dimension.key === dimension.unit.dimension.key &&
+			this.power === dimension.power;
+	};
+
 	DimensionImpl.prototype.combine = function (value, otherDimension) {
 		var dimValuePair, aggregatePower, computedValue;
 
-		// Some validation
-		otherDimension.validate();
-		if (this.systemName !== otherDimension.systemName) {
-			throw new Error('Dimensions have different systems');
+		if (!isDimension(otherDimension)) {
+			throw new Error ('The other dimension must be a dimension');
+		}
+		if (this.unit.dimension.key !== otherDimension.unit.dimension.key) {
+			throw new Error('Dimensions must have the same system to combine');
 		}
 
 		// Do conversion if necessary
-		if (this.unitName !== otherDimension.unitName) {
-			dimValuePair = otherDimension.convert(value, this.unitName);
+		if (this.unit.key !== otherDimension.unit.key) {
+			dimValuePair = otherDimension.convert(value, this.unit, this.prefix);
 			computedValue = dimValuePair.value;
 			aggregatePower = this.power + dimValuePair.dimension.power;
 		} else {
@@ -5286,69 +5306,121 @@ var Dimension = (function () {
 		}
 
 		return {
-			dimension: new Dimension(this.systemName, this.unitName, aggregatePower),
-			value: computedValue
+			value: computedValue,
+			dimension: new Dimension(this.unit, aggregatePower)
 		};
 	};
 
-	DimensionImpl.prototype.isCommensurableMatch = function (dimension) {
-		if (!isDimension(dimension)) {
-			throw new Error('Provided parameter must be a Dimension');
-		}
-		return this.systemName === dimension.systemName &&
-			this.power === dimension.power;
+	// Prefixes
+
+	DimensionImpl.prototype.canApplyPrefix = function () {
+		return (unit.type == 'binary' || unit.type == 'si');
 	};
+
+	DimensionImpl.prototype.applyPrefix = function (value) {
+		var dim, prefix, computedValue;
+
+		dim = this.clone();
+		if (dim.prefix) {
+			dimValuePair = dim.removePrefix(value);
+			dim = dimValuePair.dimension;
+			computedValue = dimValuePair.value;
+		} else {
+			computedValue = value;
+		}
+
+		prefix = dim.findPrefix(value);
+		if (prefix) {
+			dim.prefix = prefix;
+			computedValue = prefix.apply(computedValue);
+		}
+		return {
+			value: computedValue,
+			dimension: dim
+		};
+	};
+
+	DimensionImpl.prototype.findPrefix = function (value) {
+		// TODO
+	}
+
+	DimensionImpl.prototype.removePrefix = function (value) {
+		var dim, computedValue;
+
+		dim = this.clone();
+		if (dim.prefix) {
+			computedValue = dim.prefix.remove(value);
+			dim.prefix = null;
+		}
+		return {
+			value: computedValue,
+			dimension: dim
+		};
+	}
 
 	// Helper Functions
 
 	DimensionImpl.prototype.clone = function () {
-		return new Dimension(this.systemName, this.unitName, this.power);
+		return new Dimension(this.unit, this.power, this.prefix);
 	};
 
 	DimensionImpl.prototype.invert = function () {
-		return new Dimension(this.systemName, this.unitName, -this.power);
+		return new Dimension(this.unit, -this.power, this.prefix);
 	};
 
 	DimensionImpl.prototype.serialised = function () {
-		return {
-			system: this.systemName,
-			unit: this.unitName,
+		var obj = {
+			unitName: this.unit.key,
+			dimensionName: this.unit.dimension.key,
 			power: this.power
 		};
+		if (this.prefix) {
+			obj.prefix = this.prefix.key;
+		}
 	};
 
 	DimensionImpl.prototype.toJson = function () {
 		return JSON.stringify(this.serialised());
 	};
 
-	DimensionImpl.prototype.format = function (config) {
-		var unit, dimensionString;
+	DimensionImpl.prototype.format = function (config, isPlural) {
+		var name, dimensionString;
 
-		unit = measurement.unit(this.systemName, this.unitName);
-		if (config.fullName) {
+		if (config.textualDescription) {
 			var dimParts = [];
 			if (this.power < 0) {
-				dimParts.push('per');
+				dimParts.push('per'); // TODO - i18n
 			}
-			dimParts.push(this.unitName); // TODO - plurals??
+			name = pluralizedName(this.unit, isPlural);
+			if (this.prefix) {
+				name = prefix.key + name;
+			}
+			dimParts.push(name);
 			var absPower = Math.abs(this.power);
 			if (absPower === 2) {
-				dimParts.push('squared');
+				dimParts.push('squared'); // TODO - i18n
 			} else if (absPower === 3) {
-				dimParts.push('cubed');
+				dimParts.push('cubed'); // TODO - i18n
 			} else if (absPower > 3) {
-				dimParts.push('to the power of ' + absPower);
+				dimParts.push('to the power of ' + absPower); // TODO - i18n
 			}
 			dimensionString = dimParts.join(' ');
 		} else {
-			dimensionString = unit.symbol;
-			if (config.showAllPowers || this.power !== 1) {
-				var powerStr = (config.ascii) ? '^' + this.power : helpers.toSuperScript(this.power);
+			if (this.prefix) {
+				dimensionString += this.prefix.symbol;
+			}
+			dimensionString = (this.unit.symbol) ? this.unit.symbol : pluralizedName(this.unit, isPlural);
+			if (config.showAllPowers || this.power !== DEFAULT_POWER) {
+				var powerStr = (config.asciiOnly) ? '^' + this.power : helpers.toSuperScript(this.power);
 				dimensionString += powerStr;
 			}
 		}
 		return dimensionString;
 	};
+
+	function pluralizedName(unit, isPlural) {
+		return (isPlural && unit.plural && unit.plural.length > 0) ? unit.plural : unit.name;
+	}
 
 	return DimensionImpl;
 }());
@@ -5641,7 +5713,8 @@ var Unit = (function () {
 		this.plural = config.plural;
 		this.type = config.type;
 		this.symbol = config.symbol;
-		this.multiplier = config.multiplier;
+		this.multiplier = config.multiplier || 1;
+		this.offset = config.offset || 0;
 		this.rare = config.rare;
 		this.estimation = config.estimation;
 		this.prefixName = config.prefixName;
@@ -5723,6 +5796,9 @@ module.exports = Unit;
 /*jslint node: true */
 'use strict';
 
+// TODO - consider removing unused functions 
+// and/or using lodash with method level imports e.g.
+// var chunk = require('lodash/array/chunk'); // https://lodash.com/
 var helpers = {
 	isNode: function () {
 		return (typeof module !== 'undefined' && typeof module.exports !== 'undefined');
@@ -5793,6 +5869,9 @@ var helpers = {
 	isObject: function (value) {
 		return (typeof value === 'object') && !helpers.isArray(value);
 	},
+	isFunction: function (value) {
+		return (typeof value === 'function');
+	},
 	toSuperScript: function (number) {
 		var numberStr, i,
 			result = '',
@@ -5807,7 +5886,7 @@ var helpers = {
 		}
 		return result;
 	},
-	splice: function(str, index, insertedStr) {
+	splice: function (str, index, insertedStr) {
 		return str.slice(0, index) + insertedStr + str.slice(index);
 	},
 	contains: function (array, str) {
@@ -5826,7 +5905,7 @@ var helpers = {
 		}
 		return false;
 	},
-	isMatch: function(value, search, ignoreCase) {
+	isMatch: function (value, search, ignoreCase) {
 		value = value || '';
 		search = search || '';
 		if (ignoreCase) {
@@ -5835,7 +5914,7 @@ var helpers = {
 		}
 		return (value === search);
 	},
-	isPartialMatch: function(value, search, ignoreCase) {
+	isPartialMatch: function (value, search, ignoreCase) {
 		value = value || '';
 		search = search || '';
 		if (ignoreCase) {
@@ -5844,7 +5923,7 @@ var helpers = {
 		}
 		return (value.indexOf(search) >= 0);
 	},
-	isArrayMatch: function(array, search, ignoreCase) {
+	isArrayMatch: function (array, search, ignoreCase) {
 		array = array || [];
 		search = search || '';
 		if (ignoreCase) {
@@ -5855,7 +5934,7 @@ var helpers = {
 		}
 		return helpers.contains(array, search);
 	},
-	isArrayPartialMatch: function(array, search, ignoreCase) {
+	isArrayPartialMatch: function (array, search, ignoreCase) {
 		array = array || [];
 		search = search || '';
 		if (ignoreCase) {
@@ -5865,6 +5944,40 @@ var helpers = {
 			search = search.toUpperCase();
 		}
 		return helpers.containsPartial(array, search);
+	},
+	simplifyDimensions: function (value, dimensions) {
+		// TODO!!
+		return helpers.simpleSimplify(value, dimensions);
+	},
+	simpleSimplify: function (value, dimensions) {
+		var newDimensions = [],
+			processedDimensions = [],
+			computedValue = value;
+
+		helpers.forEach(dimensions, function (dimension, index) {
+			var newDimension, i, dimValuePair;
+
+			if ((dimension.power === 0) || (processedDimensions.indexOf(index) >= 0)) {
+				return;
+			}
+			newDimension = dimension.clone();
+			for (i = index  + 1; i < dimensions.length; i++) {
+				if (dimension.unit.dimension.key === dimensions[i].unit.dimension.key) {
+					dimValuePair = newDimension.combine(computedValue, dimensions[i]);
+					newDimension = dimValuePair.dimension;
+					computedValue = dimValuePair.value;
+					processedDimensions.push(i);
+				}
+			}
+			if (newDimension.power !== 0) {
+				newDimensions.push(newDimension);
+			}
+			processedDimensions.push(index);
+		});
+		return {
+			value: computedValue,
+			dimensions: newDimensions
+		}
 	}
 };
 
@@ -5898,7 +6011,9 @@ var helpers = require('../lib/helpers.js'),
 // EXPOSED CLASSES
 
 measurement.Quantity = Quantity;
+measurement.Q = Quantity; // Shorthand
 measurement.Dimension = Dimension;
+measurement.D = Dimension; // Shorthand
 
 // PROPERTIES
 
@@ -6237,6 +6352,7 @@ var Options = (function () {
 	function OptionsImpl() {
 		// General
 		this.allowReorderingDimensions = true;
+		this.useAutomaticPrefixManagement = true;
 
 		// Dimension Definitions
 		this.allowDerivedDimensions = true;
@@ -6245,7 +6361,7 @@ var Options = (function () {
 
 		// Units
 		this.useRareUnits = false;
-		this.useEstimatedUnits = false;
+		this.useEstimatedUnits = true;
 
 		// Systems
 		this.allowedSystemsForUnits = [];
@@ -6271,7 +6387,9 @@ var helpers = require('../lib/helpers.js'),
 
 var Quantity = (function () {
 	function QuantityImpl(paramA, paramB) {
-		if (!paramB) {
+		if (!paramB && helpers.isString(paramA)) {
+			constructFromJson(this, paramA);
+		} else if (!paramB) {
 			constructWithDimensions(this, paramA, []);
 		} else if (helpers.isString(paramB)) {
 			constructWithUnitName(this, paramA, paramB);
@@ -6298,6 +6416,22 @@ var Quantity = (function () {
 
 	// Helper Constructors
 
+	function constructFromJson(quantity, json) {
+		var jsonConfig, value, dimensions = [];
+
+		jsonConfig = JSON.parse(json);
+		value = jsonConfig.value;
+
+		if (jsonConfig.dimensions && helpers.isArray(jsonConfig.dimensions)) {
+			helpers.forEach(jsonConfig.dimension, function (dimConfig) {
+				dimensions.push(new measurement.Dimension(dimConfig.unit, dimConfig.dimension, dimConfig.power, dimConfig.prefix));
+			});
+		} else if (jsonConfig.unit && jsonConfig.dimension) {
+			dimensions.push(new measurement.Dimension(jsonConfig.unit, jsonConfig.dimension));
+		}
+		constructWithDimensions(quantity, value, dimensions);
+	}
+
 	function constructWithUnitName(quantity, value, unitName) {
 		// Allows q(1, 'metre');
 		var dimension = new Dimension(unitName);
@@ -6319,51 +6453,18 @@ var Quantity = (function () {
 		return 'Quantity';
 	}
 
+	function isQuantity (value) {
+		return (value.class && helpers.isFunction(value.class) && value.class() == 'Quantity');
+	}
+
 	// TODO check all below this ...
-
-	// Dimension Manipulation
-
-	QuantityImpl.prototype.simplify = function () {
-		// TODO: Handle cases where the dimension is not a base dimension, e.g. speed and needs to
-		// be simplified into two base dimensions first => length^1.time^-1
-		// Maybe a pre step simplifying the compound steps? OR all dimensions could always be saved as base values?
-
-		var newDimensions = [],
-			processedDimensions = [],
-			computedValue = this.value,
-			self = this;
-
-		helpers.forEach(this.dimensions, function (dimension, index) {
-			var newDimension, i, dimValuePair;
-
-			if (processedDimensions.indexOf(index) >= 0) {
-				return;
-			}
-			if (dimension.power === 0) {
-				return;
-			}
-			newDimension = dimension.clone();
-			for (i = index  + 1; i < self.dimensions.length; i++) {
-				if (dimension.systemName === self.dimensions[i].systemName) {
-					dimValuePair = newDimension.combine(computedValue, self.dimensions[i]);
-					newDimension = dimValuePair.dimension;
-					computedValue = dimValuePair.value;
-					processedDimensions.push(i);
-				}
-			}
-			if (newDimension.power !== 0) {
-				newDimensions.push(newDimension);
-			}
-			processedDimensions.push(index);
-		});	
-		return new Quantity(computedValue, this.systemName, newDimensions);
-	};
 
 	// Unit Conversion
 
 	// Notes:
 	// http://en.wikipedia.org/wiki/Conversion_of_units
 
+	// ????? - Unnecessary? Can Remove??
 	QuantityImpl.prototype.allDimensionsUsingBaseUnit = function () {
 		var areAllBase = true;
 
@@ -6375,6 +6476,92 @@ var Quantity = (function () {
 		return areAllBase;
 	};
 
+	// paramA - Either a quantity, or a unit, or a unitName
+	QuantityImpl.prototype.convert = function (paramA) {
+		var convertedQuantity, quantityAsBase = this.convertToBase();
+
+		if (isQuantity(paramA)) {
+			if (!this.isCommensurable(paramA)) {
+				throw new Error('In order to convert based upon a quantity they must be commensurable');
+			}
+			// Handle taking a quantity and converting the first quantity based on it's dimensions
+			convertedQuantity = quantityAsBase;
+			helpers.forEach(paramA.dimensions, function (dimension) {
+				convertedQuantity = convertedQuantity.convertFromBase(dimension.unit);
+			});
+		} else {
+			convertedQuantity = quantityAsBase.convertFromBase(paramA);
+		}
+		return convertedQuantity;
+	};
+
+	// unit (optional) - Either a unit or a unitName
+	// TODO - C# Doesn't allow a param here...
+	QuantityImpl.prototype.convertToBase = function (unit) {
+		var convertedValue, newDimensions;
+
+		if (unit && helpers.isString(unit)) {
+			unit = measurement.findUnit(unit);
+		}
+
+		newDimensions = [];
+		convertedValue = this.value;
+		helpers.forEach(this.dimensions, function (dimension) {
+			var dimValuePair;
+
+			if (!unit || dimension.unit.key === unit.key) {
+				dimValuePair = dimension.convertToBase(convertedValue);
+				convertedValue = dimValuePair.value;
+				newDimensions.push(dimValuePair.dimension);
+			} else {
+				newDimensions.push(dimension.clone());
+			}
+		});
+		return new Quantity(convertedValue, newDimensions);
+	};
+
+	QuantityImpl.prototype.convertFromBase = function (unit, prefix) {
+		var convertedValue, newDimensions;
+
+		if (unit && helpers.isString(unit)) {
+			unit = measurement.findUnit(unit);
+		}
+		if (prefix && helpers.isString(prefix)) {
+			prefix = measurement.findPrefix(prefix);
+		}
+
+		newDimensions = [];
+		convertedValue = this.value;
+		helpers.forEach(this.dimensions, function (dimension) {
+			var dimValuePair;
+
+			if (dimension.unit.dimension.key === unit.dimension.key) {
+				dimValuePair = dimension.convertFromBase(convertedValue, unit, prefix);
+				convertedValue = dimValuePair.value;
+				newDimensions.push(dimValuePair.dimension);
+			} else {
+				newDimensions.push(dimension.clone());
+			}
+		});
+		return new Quantity(convertedValue, newDimensions);
+	};
+
+	// General Operations
+
+	QuantityImpl.prototype.simplify = function () {
+		var dimensionsValuePair = helpers.simplifyDimensions(this.value, this.dimensions);
+		var resultingQuantity = new Quantity(dimensionsValuePair.value, dimensionsValuePair.dimensions);
+		if (measurement.options.useAutomaticPrefixManagement) {
+			resultingQuantity = resultingQuantity.tidyPrefixes();
+		}
+		return resultingQuantity;
+	};
+
+	QuantityImpl.prototype.tidyPrefixes = function () {
+		// TODO
+		return this;
+	}
+
 	QuantityImpl.prototype.isDimensionless = function () {
 		return (this.dimensions.length === 0);
 	};
@@ -6384,7 +6571,7 @@ var Quantity = (function () {
 			throw new Error('Cannot check the commensurability of something that is not a Quantity');
 		}
 		// Dimensionless
-		if (this.isDimensionless() && quantity.IsDimensionless()) {
+		if (this.isDimensionless() && quantity.isDimensionless()) {
 			return true;
 		}
 
@@ -6410,65 +6597,6 @@ var Quantity = (function () {
 		return allHaveMatch;
 	};
 
-	QuantityImpl.prototype.convert = function (unitName) {
-		var convertedQuantity, quantityAsBase = this.convertToBase();
-
-		if (isQuantity(unitName)) {
-			if (!this.isCommensurable(unitName)) {
-				throw new Error('In order to convert based upon a quantity they must be commensurable');
-			}
-			// Handle taking a quantity and converting the first quantity based on it's dimensions
-			convertedQuantity = quantityAsBase;
-			helpers.forEach(unitName.dimensions, function (dimension) {
-				convertedQuantity = convertFromBase(convertedQuantity, dimension.unitName);
-			});
-		} else {
-			convertedQuantity = convertFromBase(quantityAsBase, unitName);
-		}
-		return convertedQuantity;
-	};
-
-	// unitName here is optional, if provided it will only convert dimensions with that unitName to base
-	QuantityImpl.prototype.convertToBase = function (unitName) {
-		var convertedValue, newDimensions;
-
-		newDimensions = [];
-		convertedValue = this.value;
-		helpers.forEach(this.dimensions, function (dimension) {
-			var dimValuePair;
-
-			if (!unitName || dimension.unitName === unitName) {
-				dimValuePair = dimension.convertToBase(convertedValue);
-				convertedValue = dimValuePair.value;
-				newDimensions.push(dimValuePair.dimension);
-			} else {
-				newDimensions.push(dimension.clone());
-			}
-		});
-		return new Quantity(convertedValue, this.systemName, newDimensions);
-	};
-
-	// This function is hidden as exposing it should be unnecessary.
-	// Use convert instead.
-	function convertFromBase(self, unitName) {
-		var convertedValue, newDimensions;
-
-		newDimensions = [];
-		convertedValue = self.value;
-		helpers.forEach(self.dimensions, function (dimension) {
-			var dimValuePair;
-
-			if (measurement.hasUnit(dimension.systemName, unitName)) {
-				dimValuePair = dimension.convertFromBase(convertedValue, unitName);
-				convertedValue = dimValuePair.value;
-				newDimensions.push(dimValuePair.dimension);
-			} else {
-				newDimensions.push(dimension.clone());
-			}
-		});
-		return new Quantity(convertedValue, self.systemName, newDimensions);
-	}
-
 	// Quantity Math & Dimensional Analysis
 
 	// Notes:
@@ -6477,7 +6605,7 @@ var Quantity = (function () {
 
 	QuantityImpl.prototype.multiply = function (value) {
 		if (helpers.isNumber(value)) { // Assume dimensionless
-			return new Quantity(this.value * value, this.systemName, this.dimensions);
+			return new Quantity(this.value * value, this.dimensions);
 		}
 		if (!isQuantity(value)) {
 			throw new Error('Cannot multiply something that is not a number or a Quantity.');
@@ -6491,7 +6619,7 @@ var Quantity = (function () {
 		helpers.forEach(value.dimensions, function (dimension) {
 			allDimensions.push(dimension.clone());
 		});
-		var multipliedQuantity = new Quantity(this.value * value.value, this.systemName, allDimensions);
+		var multipliedQuantity = new Quantity(this.value * value.value, allDimensions);
 
 		// Convert value into same units, preferring original units
 		// 10 s^2/m * 20 kg/hr => ?? s.kg/m
@@ -6505,7 +6633,7 @@ var Quantity = (function () {
 
 	QuantityImpl.prototype.divide = function (value) {
 		if (helpers.isNumber(value)) { // Assume dimensionless
-			return new Quantity(this.value / value, this.systemName, this.dimensions);
+			return new Quantity(this.value / value, this.dimensions);
 		}
 		if (!isQuantity(value)) {
 			throw new Error('Cannot divide something that is not a number or a Quantity.');
@@ -6519,7 +6647,7 @@ var Quantity = (function () {
 		helpers.forEach(value.dimensions, function (dimension) {
 			allDimensions.push(dimension.invert());
 		});
-		var dividedQuantity = new Quantity(this.value / value.value, this.systemName, allDimensions);
+		var dividedQuantity = new Quantity(this.value / value.value, allDimensions);
 
 		// Convert value into same units, prefering original units
 		// 10 s^2/m / 20 kg/hr => ?? s^3/m.kg
@@ -6533,7 +6661,7 @@ var Quantity = (function () {
 
 	QuantityImpl.prototype.add = function (value) {
 		if (helpers.isNumber(value)) { // Assume shorthand
-			return new Quantity(this.value + value, this.systemName, this.dimensions); // TODO - Copy dimensions
+			return new Quantity(this.value + value, this.dimensions); // TODO - Copy dimensions
 		}
 		if (!isQuantity(value)) {
 			throw new Error('Cannot add something that is not a number or a Quantity');
@@ -6542,12 +6670,12 @@ var Quantity = (function () {
 		// Convert value into same units
 		var convertedQuantity = value.convert(this);
 		// Create new quantity with values added directly and the initial quantity's units
-		return new Quantity(this.value + convertedQuantity.value, this.systemName, this.dimensions);
+		return new Quantity(this.value + convertedQuantity.value, this.dimensions);
 	};
 
 	QuantityImpl.prototype.subtract = function (value) {
 		if (helpers.isNumber(value)) { // Assume shorthand
-			return new Quantity(this.value - value, this.systemName, this.dimensions); // TODO - Copy dimensions
+			return new Quantity(this.value - value, this.dimensions); // TODO - Copy dimensions
 		}
 		if (!isQuantity(value)) {
 			throw new Error('Cannot subtract something that is not a number or a Quantity');
@@ -6556,7 +6684,7 @@ var Quantity = (function () {
 		// Convert value into same units
 		var convertedQuantity = value.convert(this);
 		// Create new quantity with values subtracted directly and the initial quantity's units
-		return new Quantity(this.value - convertedQuantity.value, this.systemName, this.dimensions);
+		return new Quantity(this.value - convertedQuantity.value, this.dimensions);
 	};
 
 	// Math Aliases
@@ -6582,50 +6710,49 @@ var Quantity = (function () {
 	QuantityImpl.prototype.tan = function () { return createQuantity(this, Math.tan); };
 
 	function createQuantity(self, mathFunction) {
-		return new Quantity(mathFunction(self.value), self.systemName, self.dimensions);
+		return new Quantity(mathFunction(self.value), self.dimensions);
 	}
 
 	QuantityImpl.prototype.atan2 = function (y) {
 		// Assume y is a number and dimensionless
-		return new Quantity(Math.atan2(y, this.value), this.systemName, this.dimensions);
+		return new Quantity(Math.atan2(y, this.value), this.dimensions);
 	};
 
 	QuantityImpl.prototype.pow = function (y) {
 		// Assume y is a number and dimensionless
-		return new Quantity(Math.pow(this.value, y), this.systemName, this.dimensions);
+		return new Quantity(Math.pow(this.value, y), this.dimensions);
 	};
 
 	QuantityImpl.prototype.max = function () {
 		// Assume all arguments are numbers
 		var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-		return new Quantity(Math.max.apply(null, args), this.systemName, this.dimensions);
+		return new Quantity(Math.max.apply(null, args), this.dimensions);
 	};
 
 	QuantityImpl.prototype.min = function () {
 		// Assume all arguments are numbers
 		var args = [ this.value ].concat(Array.prototype.slice.call(arguments));
-		return new Quantity(Math.min.apply(null, args), this.systemName, this.dimensions);
+		return new Quantity(Math.min.apply(null, args), this.dimensions);
 	};
 
 	// Helper functions
 
 	QuantityImpl.prototype.clone = function () {
-		return new Quantity(this.value, this.systemName, this.dimensions);
+		var newDimensions = [];
+		helpers.forEach(this.dimensions, function (dimension) {
+			newDimensions.push(dimension.clone());
+		});
+		return new Quantity(this.value, newDimensions);
 	};
 
 	QuantityImpl.prototype.serialised = function () {
-		var jsonResult;
-
-		jsonResult = {
+		var jsonResult = {
 			value: this.value
 		};
 
-		if (this.systemName) {
-			jsonResult.system = this.systemName;
-		}
-
-		if (this.dimensions.length === 1 && this.dimensions[0].power === 1) {
-			jsonResult.unit = this.dimensions[0].unitName;
+		if (this.dimensions.length === 1 && this.dimensions[0].power === 1  && !this.dimensions[0].prefix) {
+			jsonResult.unit = this.dimensions[0].unit.key;
+			jsonResult.dimension = this.dimensions[0].unit.dimension.key;
 		} else if (this.dimensions.length > 0) {
 			jsonResult.dimensions = [];
 			helpers.forEach(this.dimensions, function (dimension) {
@@ -6674,7 +6801,7 @@ var Quantity = (function () {
 			if (eIndex > -1) {
 				var exponent = Math.floor(Math.log(this.value)/Math.log(10));
 				valueStr = valueStr.slice(0, eIndex);
-				var exponentStr = (config.ascii) ? '^' + exponent : helpers.toSuperScript(exponent);
+				var exponentStr = (config.asciiOnly) ? '^' + exponent : helpers.toSuperScript(exponent);
 				valueStr += ' x 10' + exponentStr;
 			}
 		}
@@ -6691,7 +6818,7 @@ var Quantity = (function () {
 			dimensionStrings.push(dimension.format(config));
 		});
 
-		var joiner = (config.fullName) ? ' ' : (config.unitSeparator || '');
+		var joiner = (config.textualDescription) ? ' ' : (config.unitSeparator || '');
 		var dimensionStr = dimensionStrings.join(joiner);
 
 		// Returning

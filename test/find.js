@@ -70,6 +70,7 @@ test('test unit filter function', function () {
 		estimation: false,
 		systems: [m.findSystem('metric')]
 	};
+	m.options.useEstimatedUnits = false;
 	m._private.unitFilter(unit).should.be.true;
 	unit.rare = true;
 	m._private.unitFilter(unit).should.be.false;

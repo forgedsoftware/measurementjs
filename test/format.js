@@ -1,9 +1,7 @@
 /*jslint node: true */
 'use strict';
 
-/*
-
-var m = require('../built/measurement_full.js'),
+var m = require('../lib/measurement.js'),
 	should = require('should');
 
 // VALUES ONLY
@@ -52,7 +50,7 @@ test('expand exponent should remove the e notation and replace with x10^x notati
 	m(106.3e50).format({ expandExponent: true }).should.equal('1.063 x 10⁵²');
 	m(7.45e-22).format({ expandExponent: true }).should.equal('7.45 x 10⁻²²');
 	m(106).format({ expandExponent: true }).should.equal('106');
-	m(106.3e-50).format({ expandExponent: true, ascii: true }).should.equal('1.063 x 10^-48');
+	m(106.3e-50).format({ expandExponent: true, asciiOnly: true }).should.equal('1.063 x 10^-48');
 });
 
 // VALUES WITH DIMENSIONS
@@ -68,28 +66,26 @@ test('simple format with multiple dimensions', function () {
 });
 
 test('format with multiple dimensions with powers', function () {
-	m(7, [{ unit: 'hour', power: 3}, { unit: 'metre', power: -1 }]).format({ unitSeparator: '\u00B7' }).should.equal('7 h³·m⁻¹');
-	m(9, [{ unit: 'metre', power: -1 }, { unit: 'hour', power: 3}, { unit: 'kelvin', power: -2}]).format().should.equal('9 h³m⁻¹K⁻²');
+	m(7, [new m.D('hour', 3), new m.D('metre', -1)]).format({ unitSeparator: '\u00B7' }).should.equal('7 h³·m⁻¹');
+	m(9, [new m.D('metre', -1), new m.D('hour', 3), new m.D('kelvin', -2)]).format().should.equal('9 h³m⁻¹°K⁻²');
 });
 
 test('full name with multiple dimensions with powers', function () {
-	m(10, [{ unit: 'second', power: -1 }]).format({ fullName: true }).should.equal('10 per second');
-	m(8, [{ unit: 'hour', power: 3}, { unit: 'metre', power: -1 }]).format({ fullName: true }).should.equal('8 hour cubed per metre');
+	m(10, [new m.D('second', -1)]).format({ textualDescription: true }).should.equal('10 per second');
+	m(8, [new m.D('hour', 3), new m.D('metre', -1)]).format({ textualDescription: true }).should.equal('8 hour cubed per metre');
 });
 
 test('sort false with multiple dimensions with powers', function () {
-	m(9, [{ unit: 'metre', power: -1 }, { unit: 'hour', power: 3}]).format({ sort: false }).should.equal('9 m⁻¹h³');
-	m(9, [{ unit: 'metre', power: -1 }, { unit: 'hour', power: 3}, { unit: 'kelvin', power: -2}]).format({ sort: false }).should.equal('9 m⁻¹h³K⁻²');
+	m(9, [new m.D('metre', -1), new m.D('hour', 3)]).format({ sort: false }).should.equal('9 m⁻¹h³');
+	m(9, [new m.D('metre', -1), new m.D('hour', 3), new m.D('kelvin', -2)]).format({ sort: false }).should.equal('9 m⁻¹h³°K⁻²');
 });
 
 test('showAllPowers should always show powers', function () {
 	m(21, ['hour', 'metre']).format({ showAllPowers: true }).should.equal('21 h¹m¹');
 });
 
-test('option ascii should show an ascii representation of the formatted quantity', function () {
-	m(106.3e-50, [{ unit: 'metre', power: 2 }]).format({ expandExponent: true, ascii: true }).should.equal('1.063 x 10^-48 m^2');
-	m(12.4, [{ unit: 'metre', power: -1 }, { unit: 'hour', power: 3}, { unit: 'kelvin', power: -2}]).format({ ascii: true }).should.equal('12.4 h^3m^-1K^-2');
-	m(21, ['hour', 'metre']).format({ showAllPowers: true, ascii: true }).should.equal('21 h^1m^1');
+test('option asciiOnly should show an ascii representation of the formatted quantity', function () {
+	m(106.3e-50, [new m.Dimension('metre', 2)]).format({ expandExponent: true, asciiOnly: true }).should.equal('1.063 x 10^-48 m^2');
+	m(12.4, [new m.Dimension('metre', -1), new m.Dimension('hour', 3), new m.Dimension('kelvin', -2)]).format({ asciiOnly: true }).should.equal('12.4 h^3m^-1°K^-2');
+	m(21, ['hour', 'metre']).format({ showAllPowers: true, asciiOnly: true }).should.equal('21 h^1m^1');
 });
-
-*/

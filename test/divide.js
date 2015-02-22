@@ -1,9 +1,7 @@
 /*jslint node: true */
 'use strict';
 
-/*
-
-var m = require('../built/measurement_full.js'),
+var m = require('../lib/measurement.js'),
 	should = require('should');
 
 var DELTA = 1e-8;
@@ -20,10 +18,10 @@ test('simple divide with different single units', function () {
 	q1.should.have.property('dimensions').with.lengthOf(2);
 
 	q1.dimensions[0].should.have.property('power', 1);
-	q1.dimensions[0].should.have.property('unitName', 'metre');
+	q1.dimensions[0].unit.should.have.property('key', 'metre');
 
 	q1.dimensions[1].should.have.property('power', -1);
-	q1.dimensions[1].should.have.property('unitName', 'second');
+	q1.dimensions[1].unit.should.have.property('key', 'second');
 });
 
 test('multiply with different units with single simplification', function () {
@@ -33,7 +31,5 @@ test('multiply with different units with single simplification', function () {
 	q1.should.have.property('dimensions').with.lengthOf(1);
 
 	q1.dimensions[0].should.have.property('power', 1);
-	q1.dimensions[0].should.have.property('unitName', 'metre');
+	q1.dimensions[0].unit.should.have.property('key', 'metre');
 });
-
-*/

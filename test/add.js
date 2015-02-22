@@ -1,7 +1,7 @@
 /*jslint node: true */
 'use strict';
-/*
-var m = require('../built/measurement_full.js'),
+
+var m = require('../lib/measurement.js'),
 	should = require('should');
 
 var DELTA = 1e-8;
@@ -14,7 +14,7 @@ test('simple add with no units', function () {
 test('simple add with different single units should produce error', function () {
 	(function () {
 		m(10, 'metre').add(m(5, 'second'));
-	}).should.throw("In order to convert based upon a quantity they must be commensurable");
+	}).should.throw('In order to convert based upon a quantity they must be commensurable');
 });
 
 test('simple add with the same single units should add correctly', function () {
@@ -30,7 +30,7 @@ test('simple add with the single units in the same system should add correctly',
 
 	q1.should.have.property('value', 310);
 	q1.should.have.property('dimensions').with.lengthOf(1);
-	q1.dimensions[0].should.have.property('unitName', 'second');
+	q1.dimensions[0].unit.should.have.property('key', 'second');
 	q1.dimensions[0].should.have.property('power', 1);
 });
 
@@ -39,7 +39,6 @@ test('simple add of a smaller unit in the same system should add correctly', fun
 
 	q1.should.have.property('value', 2.5);
 	q1.should.have.property('dimensions').with.lengthOf(1);
-	q1.dimensions[0].should.have.property('unitName', 'hour');
+	q1.dimensions[0].unit.should.have.property('key', 'hour');
 	q1.dimensions[0].should.have.property('power', 1);
 });
-*/

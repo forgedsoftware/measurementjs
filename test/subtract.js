@@ -1,9 +1,7 @@
 /*jslint node: true */
 'use strict';
 
-/*
-
-var m = require('../built/measurement_full.js'),
+var m = require('../lib/measurement.js'),
 	should = require('should');
 
 var DELTA = 1e-8;
@@ -33,7 +31,7 @@ test('simple subtract with the single units in the same system should subtract c
 
 	q1.should.have.property('value', -290);
 	q1.should.have.property('dimensions').with.lengthOf(1);
-	q1.dimensions[0].should.have.property('unitName', 'second');
+	q1.dimensions[0].unit.should.have.property('key', 'second');
 	q1.dimensions[0].should.have.property('power', 1);
 });
 
@@ -42,8 +40,6 @@ test('simple subtract of a smaller unit in the same system should subtract corre
 
 	q1.should.have.property('value', 1.5);
 	q1.should.have.property('dimensions').with.lengthOf(1);
-	q1.dimensions[0].should.have.property('unitName', 'hour');
+	q1.dimensions[0].unit.should.have.property('key', 'hour');
 	q1.dimensions[0].should.have.property('power', 1);
 });
-
-*/

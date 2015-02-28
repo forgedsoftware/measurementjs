@@ -3,7 +3,7 @@
 /**
  * Attaches the measurement object to the DOM for generic CommonJS usage.
  */
-document.measurement = require('./measurement.js');
+window.measurement = require('./measurement.js');
 
 },{"./measurement.js":9}],2:[function(require,module,exports){
 module.exports={

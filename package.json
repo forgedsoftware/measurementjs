@@ -1,58 +1,51 @@
 {
-    "name": "measurejs",
-    "version": "0.1.0-2",
-    "description": "A measurement package for handling and manipulating quantities.",
-    "keywords": [
-        "measurement",
-        "measure",
-        "unit",
-        "convert",
-        "quantity",
-        "size"
-    ],
-    "homepage": "http://www.measurementjs.com",
-    "author": {
-        "name": "Forged Software",
-        "url": "http://www.forgedsoftware.com"
-    },
-    "contributors": [
-        "Matthew Harward"
-    ],
-    "main": "./lib/measurement.js",
-    "dependencies": {},
-    "devDependencies": {
-        "mocha": "latest",
-        "should": "latest",
-        "gulp": "latest",
-        "gulp-jshint": "latest",
-        "gulp-uglify": "latest",
-        "gulp-rename": "latest",
-        "gulp-mocha": "latest",
-        "gulp-bump": "latest",
-        "gulp-util": "latest",
-        "gulp-sourcemaps": "latest",
-        "browserify": "latest",
-        "vinyl-source-stream": "latest",
-        "vinyl-buffer": "latest"
-    },
-    "testling": {
-        "harness": "mocha-tdd",
-        "files": "test/*.js",
-        "browsers": [
-            "ie/8..latest",
-            "chrome/latest",
-            "firefox/latest"
-        ]
-    },
-    "engines": {
-        "node": ">= 0.10"
-    },
-    "scripts": {
-        "test": "mocha -u tdd -R nyan"
-    },
-    "repository": {
-        "type": "git",
-        "url": "http://github.com/forgedsoftware/measurementjs.git"
-    },
-    "licenses": "MIT"
+  "name": "measurejs",
+  "version": "0.1.0-2",
+  "description": "A measurement package for handling and manipulating quantities.",
+  "keywords": [
+    "measurement",
+    "measure",
+    "unit",
+    "convert",
+    "quantity",
+    "size"
+  ],
+  "homepage": "http://www.measurementjs.com",
+  "author": {
+    "name": "Forged Software",
+    "url": "http://www.forgedsoftware.com"
+  },
+  "contributors": [
+    "Matthew Harward"
+  ],
+  "main": "./lib/measurement.js",
+  "dependencies": {},
+  "devDependencies": {
+    "mocha": "latest",
+    "should": "latest",
+    "gulp": "latest",
+    "gulp-jshint": "latest",
+    "gulp-uglify": "latest",
+    "gulp-rename": "latest",
+    "gulp-mocha": "latest",
+    "gulp-mocha-phantomjs": "latest",
+    "gulp-bump": "latest",
+    "gulp-sourcemaps": "latest",
+    "browserify": "latest",
+    "vinyl-source-stream": "latest",
+    "vinyl-buffer": "latest",
+    "glob": "latest",
+    "run-sequence": "latest"
+  },
+  "engines": {
+    "node": ">= 0.10"
+  },
+  "scripts": {
+    "test": "gulp test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/forgedsoftware/measurementjs.git"
+  },
+  "licenses": "MIT"
 }

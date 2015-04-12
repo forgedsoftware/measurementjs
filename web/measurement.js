@@ -6249,7 +6249,7 @@ measurement.findUnitPartial = function (unitName, dimensionName, ignoreCase) {
 
 measurement.findUnits = function (unitName, dimensionName, ignoreCase) {
 	var units;
-	if (dimensionName && dimensionName.class && dimensionName.class == "DimensionDefinition") {
+	if (dimensionName && dimensionName.class && dimensionName.class() == "DimensionDefinition") {
 		units = dimensionName.units;
 	} else {
 		units = (dimensionName) ? measurement.findDimension(dimensionName, ignoreCase).units : measurement.allUnits;
@@ -6259,7 +6259,7 @@ measurement.findUnits = function (unitName, dimensionName, ignoreCase) {
 
 measurement.findUnitsPartial = function (unitName, dimensionName, ignoreCase) {
 	var units;
-	if (dimensionName && dimensionName.class && dimensionName.class == "DimensionDefinition") {
+	if (dimensionName && dimensionName.class && dimensionName.class() == "DimensionDefinition") {
 		units = dimensionName.units;
 	} else {
 		units = (dimensionName) ? measurement.findDimensionPartial(dimensionName, ignoreCase).units : measurement.allUnits;

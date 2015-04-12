@@ -7084,12 +7084,22 @@ measurement.findUnitPartial = function (unitName, dimensionName, ignoreCase) {
 };
 
 measurement.findUnits = function (unitName, dimensionName, ignoreCase) {
-	var units = (dimensionName) ? measurement.findDimension(dimensionName, ignoreCase).units : measurement.allUnits;
+	var units;
+	if (dimensionName && dimensionName.class && dimensionName.class == "DimensionDefinition") {
+		units = dimensionName.units;
+	} else {
+		units = (dimensionName) ? measurement.findDimension(dimensionName, ignoreCase).units : measurement.allUnits;
+	}
 	return findImpl(units, 'isMatch', unitName, ignoreCase, unitFilter, unitCalculatePoints);
 };
 
 measurement.findUnitsPartial = function (unitName, dimensionName, ignoreCase) {
-	var units = (dimensionName) ? measurement.findDimensionPartial(dimensionName, ignoreCase).units : measurement.allUnits;
+	var units;
+	if (dimensionName && dimensionName.class && dimensionName.class == "DimensionDefinition") {
+		units = dimensionName.units;
+	} else {
+		units = (dimensionName) ? measurement.findDimensionPartial(dimensionName, ignoreCase).units : measurement.allUnits;
+	}
 	return findImpl(units, 'isPartialMatch', unitName, ignoreCase, unitFilter, unitCalculatePoints);
 };
 

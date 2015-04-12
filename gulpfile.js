@@ -18,7 +18,7 @@ var gulp = require('gulp'),
 // Bump Version
 gulp.task('bump', function () {
 	return gulp.src(['./package.json', './bower.json'])
-		.pipe(bump({ type: 'prerelease', indent: 4 }))
+		.pipe(bump({ type: 'patch', indent: 4 }))
 		.pipe(gulp.dest('./'));
 });
 

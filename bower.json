@@ -1,6 +1,6 @@
 {
     "name": "measurejs",
-    "version": "0.1.0-3",
+    "version": "1.0.0",
     "main": "./lib/measurement.js",
     "ignore": [
         "**/.*",

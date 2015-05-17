@@ -5448,7 +5448,7 @@ var DimensionDefinition = (function () {
 		this.derivedString = config.derived;
 		this.vector = config.vector;
 		this.dimensionless = config.dimensionless;
-		this.inheritedUnits = config.inheritedUnits;
+		this.inheritedUnits = config.inheritedUnits; // TODO handle these!!!
 		if (units) {
 			this.units = units;
 		} else {
@@ -5531,8 +5531,40 @@ var DimensionDefinition = (function () {
 			|| listFunc(dimDef.otherSymbols, value, ignoreCase);
 	}
 
+	// CLONE
+
 	DimensionDefinitionImpl.prototype.clone = function () {
 		return new DimensionDefinition(this.key, this._config, this.units);
+	}
+
+	// SERIALIZE
+
+	DimensionDefinitionImpl.prototype.serialize = function (isVerbose) {
+		var dDefinition = {
+			key: this.key,
+			name: this.name,
+			symbol: this.symbol,
+			baseUnitKey: this.baseUnitName,
+		};
+
+		if (this.derivedString) { dDefinition.derived = this.derivedString; };
+		if (this.otherNames && this.otherNames.length > 0) { dDefinition.otherNames = this.otherNames; }
+		if (this.otherSymbols && this.otherSymbols.length > 0) { dDefinition.otherSymbols = this.otherSymbols; }
+		if (this.vector) { dDefinition.vector = this.vector; }
+		if (this.dimensionless) { dDefinition.dimensionless = this.dimensionless; }
+		if (this.inheritedUnits) { dDefinition.inheritedUnitsFrom = this.inheritedUnits; }
+		if (this.units && Object.keys(this.units).length > 0) {
+			if (isVerbose) {
+				dDefinition.units = {};
+				helpers.forEach(this.units, function (unit, key) {
+					dDefinition.units[key] = unit.serialize();
+				});
+			} else {
+				dDefinition.units = Object.keys(this.units);
+			}
+		}
+
+		return dDefinition;
 	}
 
 	return DimensionDefinitionImpl;
@@ -5609,6 +5641,23 @@ var MeasurementSystem = (function () {
 
 	MeasurementSystemImpl.prototype.clone = function () {
 		return new MeasurementSystem(this.key, this._config);
+	}
+
+	// SERIALIZE
+
+	MeasurementSystemImpl.prototype.serialize = function () {
+		var mSystem = {
+			key: this.key,
+			name: this.name
+		};
+
+		if (this.historical) { mSystem.historical = this.historical; }
+		if (this.parent) { mSystem.parent = this.parent.key; }
+		if (this.children && Object.keys(this.children).length > 0) {
+			mSystem.children = Object.keys(this.children);
+		}
+		
+		return mSystem;
 	}
 
 	return MeasurementSystemImpl;
@@ -5692,6 +5741,23 @@ var Prefix = (function () {
 
 	PrefixImpl.prototype.clone = function () {
 		return new Prefix(this.key, this._config);
+	}
+
+	// SERIALIZE
+
+	PrefixImpl.prototype.serialize = function () {
+		var prefix = {
+			key: this.key,
+			symbol: this.symbol,
+			type: this.type
+		};
+
+		if (this.multiplier) { prefix.multiplier = this.multiplier; }
+		if (this.power) { prefix.power = this.power; }
+		if (this.base) { prefix.base = this.base; }
+		if (this.rare) { prefix.rare = this.rare; }
+
+		return prefix;
 	}
 
 	return PrefixImpl;
@@ -5784,6 +5850,31 @@ var Unit = (function () {
 		// and dimensions it is associated with.
 		var unit = new Unit(this.key, this._config, this.dimension);
 		unit.updateMeasurementSystems(measurement.allSystems);
+		return unit;
+	}
+
+	// SERIALIZE
+
+	UnitImpl.prototype.serialize = function () {
+		var unit = {
+			key: this.key,
+			name: this.name,
+			plural: this.plural,
+			type: this.type,
+			symbol: this.symbol,
+			systems: this.systemNames,
+			dimensionKey: this.dimension.key,
+			multiplier: this.multiplier,
+			offset: this.offset
+		};
+
+		if (this.rare) { unit.rare = this.rare; }
+		if (this.estimation) { unit.estimation = this.estimation; }
+		if (this.prefixName) { unit.prefixName = this.prefixName; }
+		if (this.prefixFreeName) { unit.prefixFreeName = this.prefixFreeName; }
+		if (this.otherNames && this.otherNames.length > 0) { unit.otherNames = this.otherNames; }
+		if (this.otherSymbols && this.otherSymbols.length > 0) { unit.otherSymbols = this.otherSymbols; }
+
 		return unit;
 	}
 

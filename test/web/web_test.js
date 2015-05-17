@@ -48,7 +48,7 @@ suite('Quantity - add', function () {
 
 });
 
-},{"../lib/measurement.js":17,"should":39}],2:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],2:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -146,7 +146,7 @@ suite('Quantity - dimensionless', function () {
 
 });
 
-},{"../lib/measurement.js":17,"should":39}],3:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],3:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -187,7 +187,7 @@ suite('Quantity - divide', function () {
 
 });
 
-},{"../lib/measurement.js":17,"should":39}],4:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],4:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -216,7 +216,7 @@ suite('Measurement - entities', function () {
 
 });
 
-},{"../lib/entities/dimension_definition.js":12,"../lib/entities/unit.js":15,"../lib/measurement.js":17,"should":39}],5:[function(require,module,exports){
+},{"../lib/entities/dimension_definition.js":13,"../lib/entities/unit.js":16,"../lib/measurement.js":18,"should":40}],5:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -562,7 +562,7 @@ function findParameterFail(func) {
 	}
 }
 
-},{"../lib/measurement.js":17,"should":39}],6:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],6:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -659,7 +659,7 @@ suite('Quantity - format values with dimensions', function () {
 
 });
 
-},{"../lib/measurement.js":17,"should":39}],7:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],7:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -703,7 +703,7 @@ suite('Quantity - multiply', function () {
 
 });
 
-},{"../lib/measurement.js":17,"should":39}],8:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],8:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -790,7 +790,80 @@ suite('Quantity - simplify dimensions', function () {
 
 });
 
-},{"../lib/measurement.js":17,"should":39}],9:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],9:[function(require,module,exports){
+
+/*jslint node: true */
+'use strict';
+
+var m = require('../lib/measurement.js'),
+	should = require('should');
+
+suite('Measurement - serialize', function () {
+
+	test('serialize unit', function () {
+		var serialized = m.dimensions.time.units.second.serialize();
+		serialized.should.have.property('key', 'second');
+		serialized.should.have.property('name', 'second');
+		serialized.should.have.property('plural', 'seconds');
+		serialized.should.have.property('multiplier', 1);
+		serialized.should.have.property('offset', 0);
+		
+		serialized.should.not.have.property('rare');
+		serialized.should.not.have.property('prefixName');
+		serialized.should.not.have.property('prefixFreeName');
+
+		serialized.should.have.property('otherSymbols', [ 'sec' ]);
+	});
+
+	test('serialize dimension definition', function () {
+		var serialized = m.dimensions.time.serialize();
+		serialized.should.have.property('key', 'time');
+		serialized.should.have.property('name', 'time');
+		serialized.should.have.property('symbol', 'T');
+		serialized.should.have.property('baseUnitKey', 'second');
+		serialized.should.have.property('otherNames', [ 'duration' ]);
+		serialized.should.have.property('units');
+		serialized.units.should.be.instanceof(Array).and.have.lengthOf(19);
+
+		serialized.should.not.have.property('derived');
+		serialized.should.not.have.property('inheritedUnitsFrom');
+		serialized.should.not.have.property('dimensionless');
+		serialized.should.not.have.property('vector');
+	});
+
+	test('serialize dimension definition - verbose mode', function () {
+		var serialized = m.dimensions.speed.serialize(true);
+		serialized.should.have.property('key', 'speed');
+
+		serialized.units.should.be.instanceof(Object);
+		Object.keys(serialized.units).length.should.equal(18);
+		serialized.units.speedOfLight.symbol.should.equal('c');
+	});
+
+	test('serialize prefix', function () {
+		var serialized = m.prefixes.bronto.serialize();
+		serialized.should.have.property('key', 'bronto');
+		serialized.should.have.property('symbol', 'B');
+		serialized.should.have.property('type', 'siUnofficial');
+		serialized.should.have.property('multiplier', 1e27);
+		serialized.should.have.property('rare', true);
+
+		serialized.should.not.have.property('base');
+		serialized.should.not.have.property('power');
+	});
+
+	test('serialize measurement system', function () {
+		var serialized = m.allSystems.si.serialize();
+		serialized.should.have.property('key', 'si');
+		serialized.should.have.property('name', 'International System of Units');
+		serialized.should.have.property('parent', 'metric');
+		serialized.should.have.property('children', [ 'astronomical', 'siCommon']);
+
+		serialized.should.not.have.property('historical');
+	});
+
+});
+},{"../lib/measurement.js":18,"should":40}],10:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -841,7 +914,7 @@ suite('Quantity - subtract', function () {
 
 });
 
-},{"../lib/measurement.js":17,"should":39}],10:[function(require,module,exports){
+},{"../lib/measurement.js":18,"should":40}],11:[function(require,module,exports){
 module.exports={
 	"systems": {
 		"metric": {
@@ -5961,7 +6034,7 @@ module.exports={
 	}
 }
 
-},{}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -6263,7 +6336,7 @@ var Dimension = (function () {
 
 module.exports = Dimension;
 
-},{"../lib/helpers.js":16,"../lib/measurement.js":17}],12:[function(require,module,exports){
+},{"../lib/helpers.js":17,"../lib/measurement.js":18}],13:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -6284,7 +6357,7 @@ var DimensionDefinition = (function () {
 		this.derivedString = config.derived;
 		this.vector = config.vector;
 		this.dimensionless = config.dimensionless;
-		this.inheritedUnits = config.inheritedUnits;
+		this.inheritedUnits = config.inheritedUnits; // TODO handle these!!!
 		if (units) {
 			this.units = units;
 		} else {
@@ -6367,8 +6440,40 @@ var DimensionDefinition = (function () {
 			|| listFunc(dimDef.otherSymbols, value, ignoreCase);
 	}
 
+	// CLONE
+
 	DimensionDefinitionImpl.prototype.clone = function () {
 		return new DimensionDefinition(this.key, this._config, this.units);
+	}
+
+	// SERIALIZE
+
+	DimensionDefinitionImpl.prototype.serialize = function (isVerbose) {
+		var dDefinition = {
+			key: this.key,
+			name: this.name,
+			symbol: this.symbol,
+			baseUnitKey: this.baseUnitName,
+		};
+
+		if (this.derivedString) { dDefinition.derived = this.derivedString; };
+		if (this.otherNames && this.otherNames.length > 0) { dDefinition.otherNames = this.otherNames; }
+		if (this.otherSymbols && this.otherSymbols.length > 0) { dDefinition.otherSymbols = this.otherSymbols; }
+		if (this.vector) { dDefinition.vector = this.vector; }
+		if (this.dimensionless) { dDefinition.dimensionless = this.dimensionless; }
+		if (this.inheritedUnits) { dDefinition.inheritedUnitsFrom = this.inheritedUnits; }
+		if (this.units && Object.keys(this.units).length > 0) {
+			if (isVerbose) {
+				dDefinition.units = {};
+				helpers.forEach(this.units, function (unit, key) {
+					dDefinition.units[key] = unit.serialize();
+				});
+			} else {
+				dDefinition.units = Object.keys(this.units);
+			}
+		}
+
+		return dDefinition;
 	}
 
 	return DimensionDefinitionImpl;
@@ -6376,7 +6481,7 @@ var DimensionDefinition = (function () {
 
 module.exports = DimensionDefinition;
 
-},{"../../lib/helpers.js":16,"../../lib/measurement.js":17,"../entities/unit.js":15}],13:[function(require,module,exports){
+},{"../../lib/helpers.js":17,"../../lib/measurement.js":18,"../entities/unit.js":16}],14:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -6447,13 +6552,30 @@ var MeasurementSystem = (function () {
 		return new MeasurementSystem(this.key, this._config);
 	}
 
+	// SERIALIZE
+
+	MeasurementSystemImpl.prototype.serialize = function () {
+		var mSystem = {
+			key: this.key,
+			name: this.name
+		};
+
+		if (this.historical) { mSystem.historical = this.historical; }
+		if (this.parent) { mSystem.parent = this.parent.key; }
+		if (this.children && Object.keys(this.children).length > 0) {
+			mSystem.children = Object.keys(this.children);
+		}
+		
+		return mSystem;
+	}
+
 	return MeasurementSystemImpl;
 }());
 
 module.exports = MeasurementSystem;
 
 
-},{"../../lib/helpers.js":16}],14:[function(require,module,exports){
+},{"../../lib/helpers.js":17}],15:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -6530,11 +6652,28 @@ var Prefix = (function () {
 		return new Prefix(this.key, this._config);
 	}
 
+	// SERIALIZE
+
+	PrefixImpl.prototype.serialize = function () {
+		var prefix = {
+			key: this.key,
+			symbol: this.symbol,
+			type: this.type
+		};
+
+		if (this.multiplier) { prefix.multiplier = this.multiplier; }
+		if (this.power) { prefix.power = this.power; }
+		if (this.base) { prefix.base = this.base; }
+		if (this.rare) { prefix.rare = this.rare; }
+
+		return prefix;
+	}
+
 	return PrefixImpl;
 }());
 
 module.exports = Prefix;
-},{"../../lib/helpers.js":16}],15:[function(require,module,exports){
+},{"../../lib/helpers.js":17}],16:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -6623,12 +6762,37 @@ var Unit = (function () {
 		return unit;
 	}
 
+	// SERIALIZE
+
+	UnitImpl.prototype.serialize = function () {
+		var unit = {
+			key: this.key,
+			name: this.name,
+			plural: this.plural,
+			type: this.type,
+			symbol: this.symbol,
+			systems: this.systemNames,
+			dimensionKey: this.dimension.key,
+			multiplier: this.multiplier,
+			offset: this.offset
+		};
+
+		if (this.rare) { unit.rare = this.rare; }
+		if (this.estimation) { unit.estimation = this.estimation; }
+		if (this.prefixName) { unit.prefixName = this.prefixName; }
+		if (this.prefixFreeName) { unit.prefixFreeName = this.prefixFreeName; }
+		if (this.otherNames && this.otherNames.length > 0) { unit.otherNames = this.otherNames; }
+		if (this.otherSymbols && this.otherSymbols.length > 0) { unit.otherSymbols = this.otherSymbols; }
+
+		return unit;
+	}
+
 	return UnitImpl;
 }());
 
 module.exports = Unit;
 
-},{"../../lib/helpers.js":16,"../../lib/measurement.js":17}],16:[function(require,module,exports){
+},{"../../lib/helpers.js":17,"../../lib/measurement.js":18}],17:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -6819,7 +6983,7 @@ var helpers = {
 
 module.exports = helpers;
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -7190,7 +7354,7 @@ measurement._private = {
 
 measurement.load(systemsJson);
 
-},{"../common/systems.json":10,"../lib/dimension.js":11,"../lib/entities/dimension_definition.js":12,"../lib/entities/measurement_system.js":13,"../lib/entities/prefix.js":14,"../lib/helpers.js":16,"../lib/options.js":18,"../lib/quantity.js":19}],18:[function(require,module,exports){
+},{"../common/systems.json":11,"../lib/dimension.js":12,"../lib/entities/dimension_definition.js":13,"../lib/entities/measurement_system.js":14,"../lib/entities/prefix.js":15,"../lib/helpers.js":17,"../lib/options.js":19,"../lib/quantity.js":20}],19:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -7223,7 +7387,7 @@ var Options = (function () {
 
 module.exports = Options;
 
-},{}],19:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 /*jslint node: true */
 'use strict';
 
@@ -7701,7 +7865,7 @@ var Quantity = (function () {
 
 module.exports = Quantity;
 
-},{"../lib/dimension.js":11,"../lib/helpers.js":16,"../lib/measurement.js":17}],20:[function(require,module,exports){
+},{"../lib/dimension.js":12,"../lib/helpers.js":17,"../lib/measurement.js":18}],21:[function(require,module,exports){
 /*!
  * The buffer module from node.js, for the browser.
  *
@@ -9034,7 +9198,7 @@ function decodeUtf8Char (str) {
   }
 }
 
-},{"base64-js":21,"ieee754":22,"is-array":23}],21:[function(require,module,exports){
+},{"base64-js":22,"ieee754":23,"is-array":24}],22:[function(require,module,exports){
 var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 
 ;(function (exports) {
@@ -9160,7 +9324,7 @@ var lookup = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 	exports.fromByteArray = uint8ToBase64
 }(typeof exports === 'undefined' ? (this.base64js = {}) : exports))
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 exports.read = function(buffer, offset, isLE, mLen, nBytes) {
   var e, m,
       eLen = nBytes * 8 - mLen - 1,
@@ -9246,7 +9410,7 @@ exports.write = function(buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128;
 };
 
-},{}],23:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 
 /**
  * isArray
@@ -9281,7 +9445,7 @@ module.exports = isArray || function (val) {
   return !! val && '[object Array]' == str.call(val);
 };
 
-},{}],24:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 var util = require('./util');
 var format = require('should-format');
 
@@ -9369,7 +9533,7 @@ AssertionError.prototype = Object.create(Error.prototype, {
 });
 
 module.exports = AssertionError;
-},{"./util":40,"should-format":42}],25:[function(require,module,exports){
+},{"./util":41,"should-format":43}],26:[function(require,module,exports){
 var AssertionError = require('./assertion-error');
 var util = require('./util');
 var format = require('should-format');
@@ -9607,13 +9771,13 @@ Assertion.prototype = {
 };
 
 module.exports = Assertion;
-},{"./assertion-error":24,"./util":40,"should-format":42}],26:[function(require,module,exports){
+},{"./assertion-error":25,"./util":41,"should-format":43}],27:[function(require,module,exports){
 var config = {
   checkProtoEql: false
 };
 
 module.exports = config;
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 // implement assert interface using already written peaces of should.js
 
 // http://wiki.commonjs.org/wiki/Unit_Testing/1.0
@@ -9895,7 +10059,7 @@ assert.ifError = function(err) {
   }
 };
 
-},{"./../assertion":25,"./../util":40,"should-equal":41}],28:[function(require,module,exports){
+},{"./../assertion":26,"./../util":41,"should-equal":42}],29:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -9966,7 +10130,7 @@ module.exports = function(should) {
     }
   };
 };
-},{"../assertion-error":24,"../util":40,"./_assert":27}],29:[function(require,module,exports){
+},{"../assertion-error":25,"../util":41,"./_assert":28}],30:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -10034,7 +10198,7 @@ module.exports = function(should, Assertion) {
     this.assert(this.obj);
   }, true);
 };
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 module.exports = function(should, Assertion) {
   /**
    * Simple chaining. It actually do nothing.
@@ -10057,7 +10221,7 @@ module.exports = function(should, Assertion) {
   });
 };
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -10222,7 +10386,7 @@ module.exports = function(should, Assertion) {
 
 };
 
-},{"../util":40,"should-equal":41}],32:[function(require,module,exports){
+},{"../util":41,"should-equal":42}],33:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -10298,7 +10462,7 @@ module.exports = function(should, Assertion) {
 
   Assertion.alias('equal', 'exactly');
 };
-},{"../util":40,"should-equal":41,"should-type":43}],33:[function(require,module,exports){
+},{"../util":41,"should-equal":42,"should-type":44}],34:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -10408,7 +10572,7 @@ module.exports = function(should, Assertion) {
 
   Assertion.alias('throw', 'throwError');
 };
-},{"../util":40}],34:[function(require,module,exports){
+},{"../util":41}],35:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -10631,7 +10795,7 @@ module.exports = function(should, Assertion) {
   });
 };
 
-},{"../util":40,"should-equal":41}],35:[function(require,module,exports){
+},{"../util":41,"should-equal":42}],36:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -10756,7 +10920,7 @@ module.exports = function(should, Assertion) {
 
 };
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -11129,7 +11293,7 @@ module.exports = function(should, Assertion) {
   });
 };
 
-},{"../util":40,"should-equal":41}],37:[function(require,module,exports){
+},{"../util":41,"should-equal":42}],38:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -11171,7 +11335,7 @@ module.exports = function(should, Assertion) {
     this.assert(this.obj.indexOf(str, this.obj.length - str.length) >= 0);
   });
 };
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -11397,7 +11561,7 @@ module.exports = function(should, Assertion) {
   }, true);
 };
 
-},{"../util":40}],39:[function(require,module,exports){
+},{"../util":41}],40:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -11564,7 +11728,7 @@ var defaultProperty = 'should';
 //Expose api via `Object#should`.
 var prevShould = should.extend(defaultProperty, defaultProto);
 
-},{"./assertion":25,"./assertion-error":24,"./config":26,"./ext/assert":28,"./ext/bool":29,"./ext/chain":30,"./ext/contain":31,"./ext/eql":32,"./ext/error":33,"./ext/match":34,"./ext/number":35,"./ext/property":36,"./ext/string":37,"./ext/type":38,"./util":40,"should-format":42,"should-type":43}],40:[function(require,module,exports){
+},{"./assertion":26,"./assertion-error":25,"./config":27,"./ext/assert":29,"./ext/bool":30,"./ext/chain":31,"./ext/contain":32,"./ext/eql":33,"./ext/error":34,"./ext/match":35,"./ext/number":36,"./ext/property":37,"./ext/string":38,"./ext/type":39,"./util":41,"should-format":43,"should-type":44}],41:[function(require,module,exports){
 /*!
  * Should
  * Copyright(c) 2010-2014 TJ Holowaychuk <tj@vision-media.ca>
@@ -11700,7 +11864,7 @@ exports.isGeneratorFunction = function(f) {
 
   return /^function\s*\*\s*/.test(f.toString());
 }
-},{"should-format":42,"should-type":43}],41:[function(require,module,exports){
+},{"should-format":43,"should-type":44}],42:[function(require,module,exports){
 var getType = require('should-type');
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
@@ -11929,7 +12093,7 @@ module.exports = eq;
 
 eq.r = REASON;
 
-},{"should-type":43}],42:[function(require,module,exports){
+},{"should-type":44}],43:[function(require,module,exports){
 var getType = require('should-type');
 
 function genKeysFunc(f) {
@@ -12182,7 +12346,7 @@ add('document', function(value) {
 add('window', function(value) {
   return '[Window]';
 });
-},{"should-type":43}],43:[function(require,module,exports){
+},{"should-type":44}],44:[function(require,module,exports){
 (function (Buffer){
 var toString = Object.prototype.toString;
 
@@ -12341,4 +12505,4 @@ Object.keys(types).forEach(function(typeName) {
 });
 
 }).call(this,require("buffer").Buffer)
-},{"buffer":20}]},{},[1,2,3,4,5,6,7,8,9]);
+},{"buffer":21}]},{},[1,2,3,4,5,6,7,8,9,10]);

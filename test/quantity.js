@@ -1,4 +1,6 @@
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),

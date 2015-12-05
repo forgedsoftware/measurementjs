@@ -1,5 +1,7 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -50,6 +52,8 @@ suite('Quantity - add', function () {
 
 },{"../lib/measurement.js":18,"should":40}],2:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -148,6 +152,8 @@ suite('Quantity - dimensionless', function () {
 
 },{"../lib/measurement.js":18,"should":40}],3:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -189,6 +195,8 @@ suite('Quantity - divide', function () {
 
 },{"../lib/measurement.js":18,"should":40}],4:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -564,6 +572,8 @@ function findParameterFail(func) {
 
 },{"../lib/measurement.js":18,"should":40}],6:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -661,6 +671,8 @@ suite('Quantity - format values with dimensions', function () {
 
 },{"../lib/measurement.js":18,"should":40}],7:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -705,6 +717,8 @@ suite('Quantity - multiply', function () {
 
 },{"../lib/measurement.js":18,"should":40}],8:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -791,8 +805,9 @@ suite('Quantity - simplify dimensions', function () {
 });
 
 },{"../lib/measurement.js":18,"should":40}],9:[function(require,module,exports){
-
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
@@ -865,6 +880,8 @@ suite('Measurement - serialize', function () {
 });
 },{"../lib/measurement.js":18,"should":40}],10:[function(require,module,exports){
 /*jslint node: true */
+/* global suite */
+/* global test */
 'use strict';
 
 var m = require('../lib/measurement.js'),
